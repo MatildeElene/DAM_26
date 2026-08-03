@@ -7,6 +7,8 @@ Data were manually extracted from the sources listed below and encoded into a ti
 
 Monarch names were automatically converted into unique identifiers (**monarch_id**) by transforming all characters to lowercase and replacing whitespace with underscores using regular expressions. Roman numerals were retained as lowercase letters (e.g., Christian IV → christian_iv) to distinguish between monarchs sharing the same regnal name, while avoiding unnecessary conversion to Arabic numerals.
 
+Missing data were first inspected. As expected, the start_reign value for the first monarch and the end_reign value for the current monarch are missing. These values were retained as NA, as they reflect genuinely unavailable information rather than data entry errors. Observations with missing values under [date_birth] and date_death were excluded only from analyses requiring the relevant variables, rather than being removed from the complete dataset.
+
 Following cleaning, the final tidy monarchy CSV file contained 52 observations (monarchs) and 6 variables (monarch_name, monarch_id, date_birth, date_death, start_reign and end_reign).
 
 
