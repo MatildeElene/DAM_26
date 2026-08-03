@@ -1,0 +1,66 @@
+---
+title: "Monarchs Portfolio Assignment: Element 1"
+author: "Matilde Elene"
+date: "July 31st"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(root.dir = ".")
+```
+
+```{r, echo=FALSE}
+#loading packages 
+library(pacman)
+pacman::p_load(ggplot2, tidyverse, tibble)
+```
+
+**Element 1:** Creating a "tidy" csv file of a monarchy with 5 variables including the monarch's name (monarch_name), birth date (dateBirth), start of reign date (startReign), and end of reign date (endReign).
+
+### Creating a Tibble
+
+```{r}
+#creating a tibble
+tib <- tibble(
+monarch_name = c("Gorm the Old","Harald I", "Sweyn I", "Harald II", "Canute II", "Hardecanute", "Magnus I Olafsson", "Sweyn I Estridsen", "Harald III", "Canute IV", "Olaf I", "Erik I", "Niels","Erik II", "Erik III", "Sweyn III", "Valdemar I", "Canute VI", "Valdemar II", "Erik IV" "Abel", "Christoper I", "Erik V", "Erik VI", "Christoper II", "Valdermar IV Atterdag", "Olaf II", "Margaret I", "Erik VII of Pomerania", "Christopher III of Bavaria", "Christian I", "John (Hans)", "Christian II", "Frederick I", "Christian III", "Frederick II", "Christian IV", "Frederick III", 
+                 ), # Sweyn III is the same as Canute V and Valdemar I 
+                    # interregnum from 1332-40
+monarch_gender = c()
+date_birth = c("","","","","","",""),
+start_reign = c("","958","987","1014","1019","1028","1042"),
+end_reign = c("958","985","1014","1018","1035","1042","1047"))
+
+#inspecting the data
+head(tib)
+```
+
+```{r}
+#saving original dataset created as Tibble 
+write.csv(tib,file = "../data/monarchy_data.csv",row.names=TRUE) #
+df <- read.csv("../data/monarchy_data.csv")
+
+# Making sure there are no duplicates, aka (an error ID-10T)
+```
+
+```{r}
+#automatically adding column monarch_id for reproducibility 
+df <- df %>%
+  mutate(
+    monarch_id=monarch_name %>%
+      str_to_lower() %>%
+      str_replace_all("\\s+", "_")
+    )
+
+```
+
+```{r}
+# Making sure data types are consistent across columns
+
+# Filtering out the unknowns 
+
+```
+
+```{r}
+
+```
