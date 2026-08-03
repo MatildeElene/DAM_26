@@ -11,7 +11,7 @@ Monarch names were automatically converted into unique identifiers (**monarch_id
 
 Missing data were first inspected. As expected, the start_reign value for the first monarch and the end_reign value for the current monarch are missing. These values were retained as NA, as they represent an unknown start date and an ongoing reign, respectively, rather than missing data due to data entry errors. Observations with missing values under date_birth and date_death were excluded only from analyses requiring the relevant variables, rather than being removed from the complete dataset.
 
-Following cleaning, the final tidy monarchy CSV file contained 52 observations (monarchs) and 6 variables (monarch_name, monarch_id, date_birth, date_death, start_reign and end_reign).
+Following cleaning, the final tidy monarchy CSV file contained 52 observations (monarchs (one per row)) and 6 variables (monarch_name, monarch_id, date_birth, date_death, start_reign and end_reign).
 
 
 ### Sources
