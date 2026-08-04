@@ -18,6 +18,9 @@ Following cleaning, the final tidy monarchy CSV file contains 52 observations (m
 
 - [Wikipedia: List of monarchs of Denmark](https://en.wikipedia.org/wiki/List_of_monarchs_of_Denmark), accessed the 03/08-2026 (_Only used for the extraction of birth dates*_)
 
+## Element 2:
+The full () for element 2 can be found in . These are all executed on the cleaned dataset containing 52 observations of 6 variables.
+
 ### To do
 - Read Bøgeskov, Boden, Laite, and Zaagsma
 - Answer element 2, question 1 in question 2 (creating a 'kings' object and inspecting it)
