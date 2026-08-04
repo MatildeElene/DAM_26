@@ -3,7 +3,7 @@
 ## Element 1:
 
 ### Data Description
-Data were manually extracted from the sources listed below and encoded into a tibble in R using RStudio (v. XX). The dataset comprises Danish monarchs who reigned from c. 936 to the present, spanning the House of Gorm (c. 936–1042), House of Fairhair (1042–1047), House of Estridsen (1047–1375), House of Bjälbo (1376–1387), House of Estridsen (1387–1412), House of Griffin (1396–1439), House of Wittelsbach, Palatinate-Neumarkt branch (1440–1448), House of Oldenburg (1448–1863), and the Schleswig-Holstein-Sonderburg-Glücksburg branch (1863–present). 
+Data were manually extracted from the sources listed below and encoded into a tibble in R using RStudio (v.4.4.2 (2024-10-31)). The dataset comprises Danish monarchs who reigned from c. 936 to the present, spanning the House of Gorm (c. 936–1042), House of Fairhair (1042–1047), House of Estridsen (1047–1375), House of Bjälbo (1376–1387), House of Estridsen (1387–1412), House of Griffin (1396–1439), House of Wittelsbach, Palatinate-Neumarkt branch (1440–1448), House of Oldenburg (1448–1863), and the Schleswig-Holstein-Sonderburg-Glücksburg branch (1863–present). 
 
 While this was done automatically, (NAME WHY SOME SORT OF CRAWLING OR () WOULD BE BETTER)
 
@@ -11,8 +11,7 @@ Monarch names were automatically converted into unique identifiers (**monarch_id
 
 Missing data were first inspected. As expected, the start_reign value for the first monarch and the end_reign value for the current monarch are missing. These values were retained as NA, as they represent an unknown start date and an ongoing reign, respectively, rather than missing data due to data entry errors. Observations with missing values under date_birth and date_death were excluded only from analyses requiring the relevant variables, rather than being removed from the complete dataset.
 
-Following cleaning, the final tidy monarchy CSV file contained 52 observations (monarchs (one per row)) and 6 variables (monarch_name, monarch_id, date_birth, date_death, start_reign and end_reign).
-
+Following cleaning, the final tidy monarchy CSV file contains 52 observations (monarchs (one per row)) and 6 variables (monarch_name, monarch_id, date_birth, date_death, start_reign and end_reign).
 
 ### Sources
 - [Britannica: list of Danish monarchs](https://www.britannica.com/topic/list-of-Danish-monarchs-2061262), accessed the 03/08-2026.
@@ -22,7 +21,7 @@ Following cleaning, the final tidy monarchy CSV file contained 52 observations (
 ### To do
 - Read Bøgeskov, Boden, Laite, and Zaagsma
 - Answer element 2, question 1 in question 2 (creating a 'kings' object and inspecting it)
--  
+-  (NAME WHY SOME SORT OF CRAWLING OR () WOULD BE BETTER) in readme.
 
 
 
