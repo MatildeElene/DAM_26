@@ -25,8 +25,10 @@ The full () for element 2 can be found in . These are all executed on the cleane
 - Read Bøgeskov, Boden, Laite, and Zaagsma
 - Answer element 2, question 1 in question 2 (creating a 'kings' object and inspecting it)
 -  (NAME WHY SOME SORT OF CRAWLING OR () WOULD BE BETTER) in readme.
--  in readme, add a columns speficiation list 
+-  in readme, add a columns speficiation list
 
+- write and ask Stephan if he'd rather we skip tomorrow
+- answer e-mails
 
 
 *NOTE: Some birth dates are either unknown or given as a range. Where a range is provided, the earliest year is used.
