@@ -19,16 +19,19 @@ Following cleaning, the final tidy monarchy CSV file contains 52 observations (m
 - [Wikipedia: List of monarchs of Denmark](https://en.wikipedia.org/wiki/List_of_monarchs_of_Denmark), accessed the 03/08-2026 (_Only used for the extraction of birth dates*_)
 
 ## Element 2:
-The full () for element 2 can be found in . These are all executed on the cleaned dataset containing 52 observations of 6 variables.
+The full code for Element 2 can be found in the accompanying R Markdown document. All analyses were conducted on the cleaned dataset containing 52 observations across 6 variables.
+
+For the purpose of this assignment, both **piping** and **nested functions** are used as alternative approaches to complete the exercises, following the methods introduced in the provided Data Carpentries lessons.
 
 ### To do
 - Read Bøgeskov, Boden, Laite, and Zaagsma
 - Answer element 2, question 1 in question 2 (creating a 'kings' object and inspecting it)
 -  (NAME WHY SOME SORT OF CRAWLING OR () WOULD BE BETTER) in readme.
 -  in readme, add a columns speficiation list
+-  answer all qeustions in element 2, question 2
 
 - write and ask Stephan if he'd rather we skip tomorrow
-- answer e-mails
+
 
 
 *NOTE: Some birth dates are either unknown or given as a range. Where a range is provided, the earliest year is used.
