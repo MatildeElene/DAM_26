@@ -19,6 +19,12 @@ Following cleaning, the final tidy monarchy CSV file contained 52 observations (
 
 - [Wikipedia: List of monarchs of Denmark](https://en.wikipedia.org/wiki/List_of_monarchs_of_Denmark), accessed the 03/08-2026 (_Only used for the extraction of birth dates*_)
 
+### To do
+- Read Bøgeskov, Boden, Laite, and Zaagsma
+- Answer element 2, question 1 in question 2 (creating a 'kings' object and inspecting it)
+-  
+
+
 
 *NOTE: Some birth dates are either unknown or given as a range. Where a range is provided, the earliest year is used.
 
