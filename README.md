@@ -17,7 +17,7 @@ Following cleaning, the final tidy monarchy CSV file contains 52 observations (m
 ### Sources
 - [Britannica: list of Danish monarchs](https://www.britannica.com/topic/list-of-Danish-monarchs-2061262) accessed the 03/08-2026.
 
-- [Wikipedia: List of monarchs of Denmark](https://en.wikipedia.org/wiki/List_of_monarchs_of_Denmark) accessed the 03/08-2026 (_Only used for the extraction of birth dates*_)
+- [Wikipedia: List of monarchs of Denmark](https://en.wikipedia.org/wiki/List_of_monarchs_of_Denmark) accessed the 03/08-2026 (_Used for the extraction of birth dates and houses*_)
 
 *NOTE: Some birth dates are either unknown or given as a range. Where a range is provided, the earliest year is used.
 
