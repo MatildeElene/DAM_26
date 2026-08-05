@@ -28,7 +28,6 @@ For the purpose of this assignment, both **piping** and **nested functions** are
 
 ### To do
 - Read Bøgeskov, Boden, Laite, and Zaagsma
-- Answer element 2, question 1 in question 2 (creating a 'kings' object and inspecting it)
 -  (NAME WHY SOME SORT OF CRAWLING OR () WOULD BE BETTER) in readme.
 -  in readme, add a columns speficiation list
 -  answer all questions in element 2, question 2
