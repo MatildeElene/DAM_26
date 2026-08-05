@@ -13,10 +13,13 @@ Missing data were first inspected. As expected, the start_reign value for the fi
 
 Following cleaning, the final tidy monarchy CSV file contains 52 observations (monarchs (one per row)) and 6 variables (monarch_name, monarch_id, date_birth, date_death, start_reign and end_reign).
 
-### Sources
-- [Britannica: list of Danish monarchs](https://www.britannica.com/topic/list-of-Danish-monarchs-2061262), accessed the 03/08-2026.
 
-- [Wikipedia: List of monarchs of Denmark](https://en.wikipedia.org/wiki/List_of_monarchs_of_Denmark), accessed the 03/08-2026 (_Only used for the extraction of birth dates*_)
+### Sources
+- [Britannica: list of Danish monarchs](https://www.britannica.com/topic/list-of-Danish-monarchs-2061262) accessed the 03/08-2026.
+
+- [Wikipedia: List of monarchs of Denmark](https://en.wikipedia.org/wiki/List_of_monarchs_of_Denmark) accessed the 03/08-2026 (_Only used for the extraction of birth dates*_)
+
+*NOTE: Some birth dates are either unknown or given as a range. Where a range is provided, the earliest year is used.
 
 ## Element 2:
 The full code for Element 2 can be found in the accompanying R Markdown document. All analyses were conducted on the cleaned dataset containing 52 observations across 6 variables.
@@ -29,7 +32,8 @@ For the purpose of this assignment, both **piping** and **nested functions** are
 -  (NAME WHY SOME SORT OF CRAWLING OR () WOULD BE BETTER) in readme.
 -  in readme, add a columns speficiation list
 -  answer all questions in element 2, question 2
+-  consider adding in leap years? 
 
 
-*NOTE: Some birth dates are either unknown or given as a range. Where a range is provided, the earliest year is used.
+
 
