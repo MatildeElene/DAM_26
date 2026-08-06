@@ -26,6 +26,9 @@ The full code for Element 2 can be found in the accompanying R Markdown document
 
 For the purpose of this assignment, both **piping** and **nested functions** are used as alternative approaches to complete the exercises, following the methods introduced in the provided Data Carpentries lessons.
 
+## AI ()
+- asking for extra explanations, "specific" rather than vague.
+
 ### To do
 - Read Bøgeskov, Boden, Laite, and Zaagsma
 -  (NAME WHY SOME SORT OF CRAWLING OR () WOULD BE BETTER) in readme.
