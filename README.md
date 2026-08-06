@@ -34,7 +34,8 @@ For the purpose of this assignment, both **piping** and **nested functions** are
 -  (NAME WHY SOME SORT OF CRAWLING OR () WOULD BE BETTER) in readme.
 -  in readme, add a columns speficiation list
 -  answer all questions in element 2, question 2
--  consider adding in leap years? 
+-  consider adding in leap years?
+-  finish last question (trend and historical ...) and knit as thml
 
 
 
