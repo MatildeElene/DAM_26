@@ -1,0 +1,347 @@
+---
+title: "Monarchs Portfolio Assignment: Element 2"
+author: "Matilde Elene"
+date: "31st of July"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      root.dir = ".")
+```
+
+```{r}
+#loading packages 
+library(pacman)
+pacman::p_load(ggplot2, tidyverse, tibble, here,lubridate)
+```
+
+The task here is to load your monarchs csv into R using the `tidyverse` toolkit, calculate and explore the kings' duration of reign with pipes `%>%` in `dplyr` and plot it over time.
+
+## Load the monarchs
+
+Make sure to first create an `.Rproj` workspace with a `data/` folder where you place either your own dataset or the provided `monarchs.csv` dataset.
+
+```{r}
+#I created this dataset using create_data.Rmd in the src/ folder. Both the original dataset (danish_monarch.csv) and the cleaned dataset (monarchy_data.csv) are available in the data/ folder.
+path_to_file <- "../data/monarchy_data.csv"
+path_output <- "../out/"
+```
+
+1.  Look at the dataset that are you loading and check what its columns are separated by? (hint: open it in plain text editor to see)
+
+List what is the separator:
+
+```{r, answer 1}
+cat("When opening the file in text edit, the dataset that I am loading has the delimiter [ , ]. In other words; the dataset is a standard comma-separated CSV.")
+```
+
+2.  Create a `monarchs` object in R with the different functions below and inspect the different outputs.
+
+-   `read.csv()`
+-   `read_csv()`
+-   `read.csv2()`
+-   `read_csv2()`
+
+```{r eval=TRUE}
+monarchs1 <- read.csv(path_to_file)
+monarchs2 <- read_csv(path_to_file)
+monarchs3 <- read.csv2(path_to_file)
+monarchs4 <- read_csv2(path_to_file)
+```
+Answer: 
+1\. Which of these functions is a `tidyverse` function? Read data with it below into a `monarchs` object
+
+2\. What is the result of running `class()` on the `monarchs` object created with a tidyverse function.
+
+3\. How many columns does the object have when created with these different functions?
+
+4\. Show the dataset so that we can see how R interprets each column
+
+```{r eval = TRUE}
+#Question 1: Which of these functions is a `tidyverse` function? 
+cat("Answer 1: The second and fourth functions (read_csv() and read_csv2()) are tidyverse functions from the readr package, where the first and third functions (read.csv() and read.csv2()) are base R functions. The main difference between read_csv() and read_csv2() (and similarly between read.csv() and read.csv2()) is their default delimiter. The first two expect (,), whereas the latter two expect semicolon-separated values (;) with commas used as decimal separators. In addition, the readr functions return tibbles, while the base R functions return data frames.\n")
+
+#loading data with the correct function
+monarchs <- read_csv(path_to_file)
+
+#question 2: 
+class_specs <- class(monarchs)
+cat("\nAnswer 2: Running class() on the monarchs object created with the tidyverse function (read_csv()) returns:",class_specs,".\nThis indicates that the object is a tibble (tbl_df), which is the data structure returned by readr functions in the tidyverse.\n")
+
+#question 3:
+cat("read.csv():", ncol(monarchs1), "columns\n", "read_csv():", ncol(monarchs2), "columns\n", "read.csv2():", ncol(monarchs3), "columns\n", "read_csv2():", ncol(monarchs4), "columns.\nThis outcome is expected, as the dataset I am loading is separated by commas. Therefore, the latter two functions will interpret these columns as one\n")
+
+rm(monarchs1, monarchs2, monarchs3, monarchs4) # clearing cache
+
+#question 4: showing the dataset so we can see how R interprets each column:
+str(monarchs)
+
+output2 <- dplyr::glimpse(monarchs) #using the dplyr package for a more tidy view of the dataset at hand.
+
+cat("Answer 4: The output of str() and glimpse() shows how R has interpreted each column, including its data type (e.g., character, integer, or numeric). This, however, is possible to override using the col_types(), as executed below:\n")
+
+#reloading the dataset with set columns, overriding the default 'fuesses' from the read_csv file by using the col_types argument.)
+monarchs <- read_csv(path_to_file,col_types = cols(date_birth = col_integer(), date_death = col_integer(), start_reign = col_integer(), end_reign = col_integer(), monarch_id = col_character()))
+
+```
+
+## Calculate the duration of reign for all the monarchs in your table
+
+You can calculate the duration of reign in years with `mutate` function by subtracting the equivalents of your `startReign` from `endReign` columns and writing the result to a new column called `duration`. But first you need to check a few things:
+
+-   Is your data messy? Fix it before re-importing to R
+-   Do your start and end of reign columns contain NAs? Choose the right strategy to deal with them: `na.omit()`, `na.rm=TRUE`, `!is.na()`
+
+Create a new column called `duration` in the monarchs dataset, utilizing the `mutate()` function from tidyverse. Check with your group to brainstorm the options.
+
+```{r}
+#renaming the columns in order to follow the wording of the exercise and creating a new column called 'duration' in the monarchs analysis dataset.
+monarchs_analysis <- monarchs %>% 
+  rename(endReign=end_reign, startReign=start_reign) %>%
+  mutate(duration = endReign-startReign)
+
+# inspecting the number of missing values in each column of the dataset
+monarchs_analysis %>%  
+  summarise(across(everything(), ~ sum(is.na(.))))
+
+# as expected, duration has two missing values. Inspecting monarchs whose durations cannot be calculated
+monarchs_analysis %>% 
+  dplyr::filter(is.na(duration) == TRUE)
+
+# For the purpose of the upcoming analysis these values are retained as NA, as their reign lengths cannot be calculated from the available information. They are excluded from analysis when a complete reign period is required. 
+```
+
+## Calculate the average duration of reign for all rulers
+
+Do you remember how to calculate an average on a vector object? If not, review the last two lessons and remember that a column is basically a vector. So you need to subset your `monarchs` dataset to the `duration` column. If you subset it as a vector you can calculate average on it with `mean()` base-R function. If you subset it as a tibble, you can calculate average on it with `summarize()` tidyverse function. Try both ways!
+
+-   You first need to know how to select the relevant `duration` column. What are your options?
+-   Is your selected `duration` column a tibble or a vector? The `mean()` function can only be run on a vector. The `summarize()` function works on a tibble.
+-   Are you getting an error that there are characters in your column? Coerce your data to numbers with `as.numeric()`.
+-   Remember to handle NAs: `mean(X, na.rm=TRUE)`
+
+```{r}
+# There are multiple options for selecting a specific column using R. Using the dplyr package, select() returns the chosen column as a one-column tibble (dataframe), and can be used through intermediate steps, (nested functions) or pipes. 
+
+#selecting through intermediate steps:
+duration_tbl <- dplyr::select(monarchs_analysis, duration)
+
+#selecting through piping:
+monarchs_analysis %>% 
+  dplyr::select(duration) #this will be printed
+
+# The class() function shows the object type.
+cat("Class of monarchs_analysis['duration']:", class(monarchs_analysis["duration"]),"\n\n")
+
+#Because 'duration'  is stored in a tibble, the summarise() function can be used to calculate its mean.
+avg_reign_tbl <- monarchs_analysis %>%
+  summarise(mean_duration = mean(duration, na.rm = TRUE)) 
+
+cat("Average duration of reign (from tibble):",avg_reign_tbl$mean_duration,"\n\n")
+
+# Since  mean() requires a numeric vector, the column is extracted as such.
+duration_vec <- monarchs_analysis$duration
+avg_reign_vec <- mean(duration_vec, na.rm = TRUE)
+
+cat("Average duration of reign (from vector):",avg_reign_vec)
+
+#for both calculations on the average reign duration, na.rm = TRUE automatically excludes missing (NA) values. 
+```
+
+## How many and which monarchs enjoyed a longer-than-average duration of reign?
+
+You have calculated the average duration above. Use it now to `filter()` the `duration` column in `monarchs` dataset. Display the result and also count the resulting rows with `count()`
+
+```{r fig.width=8, fig.height=4.5}
+# filtering the dataset in order to view monarchs whose reigns were longer than average
+over_avg_duration <- monarchs_analysis %>%
+  dplyr::filter(duration > avg_reign_tbl$mean_duration)
+
+str(over_avg_duration)
+# from this specific filtering we've gone from 52 observations to 25. 
+
+#counting the remaining observations
+n_total_over <- count(over_avg_duration)
+cat("Number of monarchs who have enjoyed a longer-than-average duration of reign:", n_total_over$n)
+
+# Visualizing monarchs with longer-than-average reigns using ggplot()
+
+# Defining the legend label for the average reign
+avg_label <- paste0("Average reign (",avg_reign_vec," years)")
+
+plot_over_average <- ggplot(
+  over_avg_duration,
+  aes(
+    x = duration, 
+    y = monarch_name, 
+    fill = monarch_house)
+  ) +
+  geom_col(
+    width = 0.6
+  ) +
+  geom_vline(
+    aes(
+      xintercept = avg_reign_vec,
+      linetype = avg_label
+      ),
+    inherit.aes = FALSE,
+      alpha = 0.6
+    ) +
+  scale_linetype_manual(
+    name = NULL,
+    values = setNames("dashed", avg_label)
+    )+
+  labs(
+    fill = "House",
+    x = "Duration of reign (years)",
+    y = "Name of Monarch",
+    title = paste0("Monarchs with reigns longer than average (n=", n_total_over$n," )"
+    )
+  ) +
+  scale_fill_brewer(
+    palette = "Dark2",
+    labels = function(x) {
+      x[x == "Schleswig-Holstein-Sonderburg-Glücksburg branch"] <- "Schleswig-Holstein-\nSonderburg-Glücksburg"
+      x
+    }
+  ) +
+  coord_cartesian(xlim = c(
+    avg_reign_vec - 1,
+    max(over_avg_duration$duration)
+    )
+    ) +
+  guides(
+    fill = guide_legend(order = 1),
+    linetype = guide_legend(order = 2)
+    )+
+  theme_minimal() +
+  theme(axis.text.y = element_text(size = 8),
+        legend.position = "right",
+        legend.key.spacing.y = unit(0.2,"cm"),
+        plot.title = element_text(face = "bold"))
+
+plot_over_average
+
+#saving plot to ../out
+ggsave(
+  filename = file.path(path_output, "over_average_reign.jpg"),
+  plot = plot_over_average,
+  width = 8.5,
+  height = 6,
+  dpi = 300     # High resolution for quality
+)
+
+```
+
+## How many days did the three longest-ruling monarchs rule?
+
+-   Sort monarchs by reign `duration` in the descending order. Select the three longest-ruling monarchs with the `slice()` function
+-   Use `mutate()` to create `Days` column where you calculate the total number of days they ruled
+-   BONUS: consider the transition year (with 366 days) in your calculation!
+
+```{r, fig.width=8, fig.height=4.5}
+#selecting the three longest-ruling monarchs by slicing and sorting by duration reign in descending order
+three_longest <- over_avg_duration %>%
+  arrange(desc(duration))%>%
+  slice(1:3)
+
+cat("The three longest-ruling monarchs are ", three_longest$monarch_name[1], " (", three_longest$duration[1], " years), ", three_longest$monarch_name[2], " (", three_longest$duration[2], " years), and ", three_longest$monarch_name[3], " (", three_longest$duration[3], " years).", sep = ""
+)
+
+#creating a "day" column in the original dataset, where the total number of days ruled are included (simply approximating 365 days a year (Gregorian Calendar)).
+monarchs_analysis <- monarchs_analysis %>%
+  mutate(days_of_reign = duration * 365) %>% #approximates each full year.
+  arrange(desc(days_of_reign))
+
+monarchs_analysis 
+```
+
+## Challenge: Plot the monarchs' duration of reign through time
+
+What is the long-term trend in the duration of reign among Danish monarchs? How does it relate to the historical violence trends ?
+
+-   Try to plot the duration of reign column in `ggplot` with `geom_point()` and `geom_smooth()`
+-   In order to peg the duration (which is between 1-99) somewhere to the x axis with individual centuries, I recommend creating a new column `midyear` by adding to `startYear` the product of `endYear` minus the `startYear` divided by two (`startYear + (endYear-startYear)/2`).
+-   Now you can plot the kings dataset, plotting `midyear` along the x axis and `duration` along y axis
+-   BONUS: add a title, nice axis labels to the plot and make the theme B&W and font bigger to make it nice and legible!
+
+```{r}
+# Long term trend: duration of reign through time:
+
+# creating the midyear column to represent each monarch's reign by its midpoint
+monarchs_analysis <- monarchs_analysis %>% 
+  mutate(midyear = startReign + (endReign-startReign)/2) # getting one data point rather than a ()
+
+# creating gg-plot
+plot_long_term <- ggplot(monarchs_analysis, 
+                         aes(x=midyear, y=duration, color=monarch_house)) +
+  geom_point(size=2, pch=8) + #closest I could get to a crown
+  scale_x_continuous(
+    breaks = seq(900,2100,by = 100)) + 
+  scale_y_continuous(
+    breaks = seq(0,60,by = 10 )
+  ) +
+  geom_smooth(
+    aes(group = 1),
+    color = "steelblue",
+    fill = "steelblue",
+    alpha=0.15,
+    linewidth=0.4
+    ) +
+  scale_color_brewer(
+    palette="Dark2",
+    labels = function(x) {
+      x[x == "Schleswig-Holstein-Sonderburg-Glücksburg branch"] <-
+        "Schleswig-Holstein-\nSonderburg-Glücksburg"
+      x[x == "House of Wittelsbach, Palatinate-Neumarkt branch"] <-
+        "House of Wittelsbach,\nPalatinate-Neumarkt"
+      x
+      }
+    ) +
+  geom_hline(
+    data=data.frame(avg=avg_reign_vec, label=avg_label),
+    aes(yintercept = avg, linetype = label),
+    inherit.aes = FALSE,
+    alpha = 0.6
+    ) +
+  scale_linetype_manual(
+    name = NULL,
+    values = setNames("dashed", avg_label)
+    ) +
+  labs(
+    x= "Midpoint",
+    y="Duration of reign (years)",
+    title = "Duration of reign through time",
+    color="House"
+  )+
+  guides(
+    color = guide_legend(order = 1),
+    linetype = guide_legend(order = 2)
+    )+
+  theme_minimal() + #recreating the theme from the previous plot 
+  theme(
+    axis.title.y=element_text(size=10, margin = margin(r = 15)),
+    axis.title.x = element_text(size=10, margin = margin(t = 15)),
+    legend.position = "right",
+    plot.title = element_text(hjust = 0.8, face="bold", size=14),
+    legend.key.spacing.y = unit(0.2,"cm"))
+    
+plot_long_term
+
+#saving plot to ./out
+ggsave(
+  filename = file.path(path_output, "long_term_plot.jpg"),
+  plot = plot_long_term,
+  width = 8.5,
+  height = 6,
+  dpi = 300     # High resolution for quality
+)
+```
+
+```{r}
+# historical trends: 
+cat("From the plot")
+```
+
+And to submit this rmarkdown, knit it into html. But first, clean up the code chunks, adjust the date, rename the author and change the `eval=FALSE` flag to `eval=TRUE` so your script actually generates an output. Well done!
