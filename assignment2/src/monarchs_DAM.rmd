@@ -341,7 +341,21 @@ ggsave(
 
 ```{r}
 # historical trends: 
-cat("From the plot")
+cat("From the plot (). 
+
+For example, in ()
+
+    King Gorm the old was the first recognized king of Denmark (DK). During the Middle Ages (app. )*. 
+    
+    From 1397-1523 the Kalmar Union tied together the Kingdoms of Norway, Sweden, and Denmark under one Monarch*
+    
+    Christian the 4th was one of the most renowned kings in Danish history - he ruled during the 17th and 18th century, in which the territories of Skåne, Halland, and Blekinge was lost to Sweden during this period*. 
+    
+    Because Denmark was on the losing side of the Nepoleonic Wars in the beginning of the 19th Century, ()*. 
+    
+    The Danish absolute monarchy was introduced by Frederik III with a coup in 1660. It was abolished in 1848 after the death of Christian VII**") 
+
+#*footnote: Source is https://um.dk/litauen/en/about-lithuania/history/. **footnote: source is https://en.natmus.dk/historical-knowledge/denmark/absolute-monarchy-1660-1848/. 
 ```
 
 And to submit this rmarkdown, knit it into html. But first, clean up the code chunks, adjust the date, rename the author and change the `eval=FALSE` flag to `eval=TRUE` so your script actually generates an output. Well done!
