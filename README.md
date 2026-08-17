@@ -1,3 +1,23 @@
+## Repo structure
+
+```
+assignment_2/
+├── data/                        # Possible data storage for project
+│
+├── out/
+│   ├── plots/                   # Saved plots and visualizations (.png)
+│   └── reports/                 # Classification reports and evaluation outputs (.txt & .csv)
+│
+├── src/
+│   ├── logistic_regression.py   # Logistic regression baseline classifier
+│   ├── neural_network.py        # MLP neural network classifier with GridSearchCV
+│   └── utils.py                 # Shared utility and preprocessing functions
+│
+├── requirements.txt             # Python package dependencies
+├── setup.sh                     # Environment setup script
+├── run.sh                       # Runs the full analysis pipeline
+└── README.md                    # Project documentation
+```
 
 
 ## AI declaration
