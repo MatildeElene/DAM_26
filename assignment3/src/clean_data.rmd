@@ -1,0 +1,91 @@
+---
+title: "Clean Transcribed Data - DAM26 (assignment 3)"
+author: "Matilde Elene Hansen"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+#install packages (see ../requirements.txt)
+library(dplyr)
+library(tidyr)
+```
+
+```{r}
+# input data (raw)
+raw_path <- file.path("..", "data", "raw", "concat_1889_1913_raw.csv")
+
+# paths for output (tidy files)
+tidy_path <-  file.path(
+  "..", "data", "tidy"
+  )
+                         
+# create directory if it does not exist
+if (!dir.exists(tidy_path)) {
+  dir.create(tidy_path)
+}
+```
+
+```{r, raw data inspection}
+# data: 
+raw_data <- read_csv(raw_path)
+
+dim(raw_data) #should be comma-separated (3997 rows, 31 columns)
+
+# creating working dataframe and standardizing column names for analysis
+raw_df <- raw_data %>%
+  rename(
+    patient_id = Løbenr,
+    name = Navn,
+    sex = Køn,
+    occupation = `Stand og stilling`,
+    residence = Hjemsted,
+    age_at_admission = `Alder ved indlæggelsen`,
+    date_of_birth = Fødselsdato,
+    religion = Trosbekendelse,
+    marital_status = Ægtestandsforhold,
+    admission_date = `Naar ankommen`,
+    admitted_from = `Hvorfra ankommen`,
+    diagnosis_at_admission = `Diagnose ved indlæggelsen`,
+    duration_at_admission = `Varighed ved indlæggelsen`,
+    journal_number = Journalnummer,
+    care_payment_class = `Forplejnings og betalingsklasse`,
+    episode_number = `Anfaldets nr.`,
+    remarks = Anmærkninger,
+    family_disposition = Familiedisposition,
+    discharge_number = `Afgået nr.`,
+    discharge_date = `Afgået naar`,
+    condition_at_discharge = `I hvad tilstand`,
+    discharged_to = Hvorhen,
+    previous_number = `Ældre nr.`,
+    readmitted_under_number = `Genindlagt under nr.`,
+    transcriber_notes = `Indtasters bemærkninger`
+  )
+  
+```
+
+```{r}
+# tidying column cells: standardizing
+
+#køn / sex
+### K --> k
+
+
+```
+
+
+
+```{r, column specific manual inspection}
+#CREATE PLOT SHOWING COUNT OF “Fødselsdato” 
+
+```
+
+
+
+```{r, duplicates}
+# Manually inspecting and validating duplicates 
+
+# Removing duplicates from analytical sample 
+
+```
+

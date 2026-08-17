@@ -1,0 +1,7 @@
+library(rvest)
+library(dplyr)
+library(stringr)
+library(purrr)
+library(tidyr)
+library(readr)
+library(tibble)
