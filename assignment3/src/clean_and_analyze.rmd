@@ -1,0 +1,221 @@
+---
+title: "Clean Transcribed Data - DAM26 (assignment 3)"
+author: "Matilde Elene Hansen"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+#install packages (see ../requirements.txt)
+library(dplyr)
+library(tidyr)
+library(rvest)
+
+```
+
+```{r}
+# input data (raw)
+raw_path <- file.path("..", "data", "raw")
+
+
+# paths for output (tidy files)
+tidy_path <-  file.path(
+  "..", "data", "tidy"
+  )
+                         
+# create directory if it does not exist
+if (!dir.exists(tidy_path)) {
+  dir.create(tidy_path)
+}
+```
+
+```{r, raw data inspection}
+# data: 
+raw_data <- read_csv(file.path(raw_path, "concat_1889_1913_raw.csv"))
+dim(raw_data) #should be comma-separated (3997 rows, 31 columns)
+
+#gender-split:
+raw_men <- read_csv(file.path(raw_path, "risskov_men_1889_1913_raw.csv"))
+raw_women <- read_csv(file.path(raw_path, "risskov_women_1889_1913_raw.csv"))
+
+rows_raw_men <- count(raw_men)
+rows_raw_women <- count(raw_women)
+
+cat(paste0("Women's n. of observations (raw) = ", rows_raw_women , ". \nMen's n. of observations (raw) = ", rows_raw_men,"."))
+```
+
+
+```{r, raw data inspection}
+#  inspecting a random subset: 
+set.seed(99)
+draw_random <- function(data, n = 2) {
+  data %>%
+    distinct(Løbenr, .keep_all = TRUE) %>%
+    slice_sample(n = n)
+}
+
+print(sample_men <- draw_random(raw_men, n = 2))
+print(sample_women <- draw_random(raw_women, n = 2))
+```
+
+
+```{r, Download sampled images and annotations}
+# setting output folder:
+comparison_dir <- file.path("..", "out", "digitized_comparison")
+dir.create(
+  comparison_dir,
+  recursive = TRUE,
+  showWarnings = FALSE
+)
+
+# extract archival image ID:
+get_image_id <- function(transcription_url) {
+  page <- read_html(transcription_url)
+  links <- page %>%
+    html_elements("a") %>%
+    html_attr("href")
+  image_link <- links[
+    str_detect(links, "Fejlmelding_af_billede")
+  ]
+
+  image_id <- str_match(
+    image_link,
+    "bid=(\\d+)"
+  )[, 2]
+  return(image_id)
+}
+
+# add correct image IDs:
+sample_men <- sample_men %>%
+  mutate(
+    image_id = sapply(transcription_url, get_image_id),
+    archive_image_url = paste0(
+      "https://api.rigsarkivet.dk/ao/v1/images/",
+      image_id
+    )
+  )
+
+sample_women <- sample_women %>%
+  mutate(
+    image_id = sapply(transcription_url, get_image_id),
+    archive_image_url = paste0(
+      "https://api.rigsarkivet.dk/ao/v1/images/",
+      image_id
+    )
+  )
+
+# download digitized images
+save_digitized_images <- function(data, group, out_dir) {
+  
+  for (i in seq_len(nrow(data))) {
+    
+    image_url <- data$archive_image_url[i]
+    loebenr <- data$Løbenr[i]
+    
+    file_name <- paste0(
+      group, "_",
+      loebenr,
+      ".jpg"
+    )
+    
+    file_path <- file.path(
+      out_dir,
+      file_name
+    )
+    
+    download.file(
+      url = image_url,
+      destfile = file_path,
+      mode = "wb",
+      quiet = FALSE
+    )
+  }
+}
+
+# save corresponding transcribed annotations
+save_sample_data <- function(data, group, out_dir) {
+  for (i in seq_len(nrow(data))) {
+    loebenr <- data$Løbenr[i]
+    file_name <- paste0(
+      group, "_",
+      loebenr,
+      ".csv"
+    )
+    file_path <- file.path(
+      out_dir,
+      file_name
+    )
+    write_csv(
+      data[i, ],
+      file_path
+    )
+  }
+}
+
+# save sampled scans and annotations (wrapper)
+save_comparison <- function(data, group, out_dir) {
+  save_digitized_images(data, group, out_dir)
+  save_sample_data(data, group, out_dir)
+}
+
+# saving sampled scans and annotations
+save_comparison(sample_men, "men", comparison_dir)
+save_comparison(sample_women, "women", comparison_dir)
+
+```
+```{r, standardizing}
+# creating working dataframe and standardizing column names for analysis
+raw_df <- raw_data %>%
+  rename(
+    patient_id = Løbenr,
+    name = Navn,
+    sex = Køn,
+    occupation = `Stand og stilling`,
+    residence = Hjemsted,
+    age_at_admission = `Alder ved indlæggelsen`,
+    date_of_birth = Fødselsdato,
+    religion = Trosbekendelse,
+    marital_status = Ægtestandsforhold,
+    admission_date = `Naar ankommen`,
+    admitted_from = `Hvorfra ankommen`,
+    diagnosis_at_admission = `Diagnose ved indlæggelsen`,
+    duration_at_admission = `Varighed ved indlæggelsen`,
+    journal_number = Journalnummer,
+    care_payment_class = `Forplejnings og betalingsklasse`,
+    episode_number = `Anfaldets nr.`,
+    remarks = Anmærkninger,
+    family_disposition = Familiedisposition,
+    discharge_number = `Afgået nr.`,
+    discharge_date = `Afgået naar`,
+    condition_at_discharge = `I hvad tilstand`,
+    discharged_to = Hvorhen,
+    previous_number = `Ældre nr.`,
+    readmitted_under_number = `Genindlagt under nr.`,
+    transcriber_notes = `Indtasters bemærkninger`
+  )
+
+# tidying column cells: standardizing
+
+#køn / sex
+### K --> k
+
+
+```
+
+
+
+```{r, column specific manual inspection}
+#CREATE PLOT SHOWING COUNT OF “Fødselsdato” 
+
+```
+
+
+
+```{r, duplicates}
+# Manually inspecting and validating duplicates 
+# e.g. are these readmittances?
+
+# Removing duplicates from analytical sample 
+
+```
+
