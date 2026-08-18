@@ -17,16 +17,22 @@ library(rvest)
 # input data (raw)
 raw_path <- file.path("..", "data", "raw")
 
-
 # paths for output (tidy files)
 tidy_path <-  file.path(
   "..", "data", "tidy"
   )
-                         
 # create directory if it does not exist
 if (!dir.exists(tidy_path)) {
   dir.create(tidy_path)
 }
+
+# setting figure output directory
+figures_dir <- file.path("..", "out", "figures")
+dir.create(
+  figures_dir,
+  recursive = TRUE,
+  showWarnings = FALSE
+)
 ```
 
 ```{r, raw data inspection}
@@ -46,16 +52,43 @@ cat(paste0("Women's n. of observations (raw) = ", rows_raw_women , ". \nMen's n.
 
 
 ```{r, raw data inspection}
-#  inspecting a random subset: 
+# inspecting a random subset
 set.seed(99)
+
 draw_random <- function(data, n = 2) {
   data %>%
     distinct(Løbenr, .keep_all = TRUE) %>%
     slice_sample(n = n)
 }
 
-print(sample_men <- draw_random(raw_men, n = 2))
-print(sample_women <- draw_random(raw_women, n = 2))
+# including a specific Løbenr
+draw_random_include <- function(data, include_id, n = 2) {
+  data_unique <- data %>%
+    distinct(Løbenr, .keep_all = TRUE)
+  bind_rows(
+    data_unique %>% filter(Løbenr == include_id),
+    data_unique %>%
+      filter(Løbenr != include_id) %>%
+      slice_sample(n = n - 1)
+  ) %>%
+    slice_sample(prop = 1)  # randomize final order
+}
+
+# men's sample includes Løbenr 4673
+sample_men <- draw_random_include(
+  raw_men,
+  include_id = 4673,
+  n = 2
+)
+
+# women's sample is fully random
+sample_women <- draw_random(
+  raw_women,
+  n = 2
+)
+
+print(sample_men)
+print(sample_women)
 ```
 
 
@@ -165,7 +198,7 @@ save_comparison(sample_women, "women", comparison_dir)
 ```
 ```{r, standardizing}
 # creating working dataframe and standardizing column names for analysis
-raw_df <- raw_data %>%
+tidy_df <- raw_data %>%
   rename(
     patient_id = Løbenr,
     name = Navn,
@@ -194,12 +227,90 @@ raw_df <- raw_data %>%
     transcriber_notes = `Indtasters bemærkninger`
   )
 
-# tidying column cells: standardizing
+#saving original archival names for labeling:
+variable_labels <- tibble(
+  variable = names(tidy_df),
+  original_label = names(raw_data)
+)
+```
+
+
+```{r, standardizing cells}
+# tidying cells for computational analysis: 
 
 #køn / sex
 ### K --> k
 
+# Kunne ikke udfyldes (cells) ==>
+tidy_df <- tidy_df %>%
+  mutate(
+    across(
+      where(is.character),
+      ~ if_else(
+        .x == "Kunne ikke udfyldes",
+        "could_not_transcribe",
+        .x
+      )
+    )
+  )
 
+```
+
+```{r}
+
+# total number of explicit transcription failures
+
+cat(sum(tidy_df == "could_not_transcribe", na.rm = TRUE))
+
+# count "could_not_transcribe" by column
+could_not_transcribe_counts <- tidy_df %>%
+  summarise(
+    across(
+      everything(),
+      ~ sum(.x == "could_not_transcribe", na.rm = TRUE)
+    )
+  ) %>%
+  pivot_longer(
+    everything(),
+    names_to = "variable",
+    values_to = "count"
+  ) %>%
+  filter(count >= 10) %>%
+  left_join(
+    variable_labels,
+    by = "variable"
+  ) %>%
+  arrange(count)
+
+# plot
+could_not_transcribe_plot <- ggplot(
+  could_not_transcribe_counts,
+  aes(
+    x = count,
+    y = reorder(original_label, count)
+  )
+) +
+  geom_col() +
+  labs(
+    x = "Count",
+    y = "Archival field",
+    title = 'Occurrences of "could_not_transcribe" by archival field'
+  ) +
+  theme_minimal()
+
+could_not_transcribe_plot
+
+# saving plot
+ggsave(
+  filename = file.path(
+    figures_dir,
+    "could_not_transcribe_by_field.png"
+  ),
+  plot = could_not_transcribe_plot,
+  width = 8,
+  height = 5,
+  dpi = 300
+)
 ```
 
 
