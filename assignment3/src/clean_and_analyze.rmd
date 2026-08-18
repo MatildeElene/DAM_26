@@ -315,6 +315,7 @@ ggsave(
 
 
 
+
 ```{r, column specific manual inspection}
 #CREATE PLOT SHOWING COUNT OF “Fødselsdato” 
 
