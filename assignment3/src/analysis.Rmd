@@ -1,0 +1,362 @@
+---
+title: "analysis"
+author: "Matilde 2026"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#setting directories: 
+
+# input data (analuysis)
+analysis_path <- file.path("..", "data", "tidy")
+
+# paths for output (tidy files)
+tidy_path <-  file.path(
+  "..", "data", "tidy"
+)
+# create directory if it does not exist
+if (!dir.exists(tidy_path)) {
+  dir.create(tidy_path)
+}
+
+out_dir <- file.path("..", "out")
+dir.create(
+  out_dir,
+  recursive = TRUE,
+  showWarnings = FALSE
+)
+
+# setting figure output directory
+figures_dir <- file.path("..", "out", "figures")
+dir.create(
+  figures_dir,
+  recursive = TRUE,
+  showWarnings = FALSE
+)
+
+# setting output folder:
+comparison_dir <- file.path("..", "out", "digitized_comparison")
+dir.create(
+  comparison_dir,
+  recursive = TRUE,
+  showWarnings = FALSE
+)
+```
+
+```{r load_data}
+# analytical sample: 
+df <- read_csv(file.path(analysis_path, "analysis_df.csv"))
+
+# checking dataframe structure and dimensions
+str(df) #should be comma-separated (3997 rows, 31 columns)
+
+```
+```{r}
+#for analysis, transcription notes are omitted, and treated as NA:
+df <- df %>%
+  mutate(
+    across(
+      where(is.character),
+      ~ na_if(.x, "could_not_transcribe")
+    )
+  )
+
+# changing data types:
+df <- df %>%
+  mutate(
+    # Standardizing dates from d-m-y to y-m-d
+    admission_date = as.Date(admission_date, format = "%d-%m-%Y"),
+    discharge_date = as.Date(discharge_date, format = "%d-%m-%Y"),
+    date_of_birth = as.Date(date_of_birth, format = "%d-%m-%Y"),
+
+    # Extracting years
+    birth_year = lubridate::year(date_of_birth),
+    admission_year = lubridate::year(admission_date),
+    discharge_year = lubridate::year(discharge_date),
+
+    # Factorizing defined categorical variables
+    sex_series = factor(sex_series),
+    sex = factor(sex),
+    marital_status = factor(marital_status),
+
+    # Numeric / sequential variables
+    series_page = as.integer(series_page),
+    crowd_id = as.integer(crowd_id),
+    
+    #cat:
+    patient_key = as.character(patient_key)
+  )
+
+```
+###  DESCRIPTIVE ANALYSES
+```{r}
+# Diagnoses columns
+#what diagnostic language will I find? (not standardized)
+diagnosis_counts <- df %>%
+  count(diagnosis_at_admission, sort = TRUE)
+diagnosis_counts
+```
+```{r}
+# Standardizing diagnosis strings for analysis
+df <- df %>%
+  mutate(
+    diagnosis_standardized = diagnosis_at_admission %>%
+      str_to_lower() %>%
+      str_remove_all("[[:punct:]]") %>%
+      str_squish()%>%
+      na_if(""),
+
+    diagnosis_standardized = case_when(
+      str_detect(diagnosis_standardized, "obs") ~ "obs",
+      TRUE ~ diagnosis_standardized
+    ),
+
+    diagnosis_standardized = recode(
+      diagnosis_standardized,
+      !!!diagnosis_recode,
+      .default = diagnosis_standardized
+    )
+  )
+# Recoding obvious textual variants
+diagnosis_recode <- c(
+  "melank" = "melankoli",
+  "mel"    = "melankoli",
+  "melancholi" = "melankoli",
+  "melanch" = "melankoli",
+  "mekankoli" = "melankoli",
+  "melankol" = "melankoli",
+  "forv" = "forvirring",
+  "dements" = "demens",
+  "dementia" = "demens",
+  "mani period" = "mani periodisk",
+  "firrykthed" = "forrykthed",
+  "forrkt" = "forrykthed",
+  "forrykhed" = "forrykthed",
+  "forrykt" = "forrykthed",
+  "dem prac" = "dementia præcox",
+  "dem præcox"= "dementia præcox",
+  "dem præc" = "dementia præcox",
+  "dem pre" = "dementia præcox"
+  )
+
+df <- df %>%
+  mutate(
+    diagnosis_standardized = recode(
+      diagnosis_standardized,
+      !!!diagnosis_recode,
+      .default = diagnosis_standardized
+    )
+  )
+
+# viewing the standardized diagnoses
+clean_diagnosis_counts <- df %>%
+  count(diagnosis_standardized, sort = TRUE)
+clean_diagnosis_counts
+
+cat("Number of clean diagnosis:", nrow(clean_diagnosis_counts)) #495
+
+```
+
+```{r}
+# Comparing diagnoses across the two archival series
+diagnosis_by_series <- df %>%
+  count(
+    sex_series,
+    diagnosis_standardized
+  ) %>%
+  group_by(sex_series) %>%
+  mutate(
+    proportion = n / sum(n)
+  ) %>%
+  arrange(sex_series, desc(n)) %>%
+  ungroup()
+
+diagnosis_by_series
+```
+
+```{r}
+# Top 10 most frequent standardized diagnoses overall
+top_10_diagnoses <- df %>%
+  filter(!is.na(diagnosis_standardized)) %>%
+  count(diagnosis_standardized, sort = TRUE) %>%
+  slice_head(n = 10) %>%
+  pull(diagnosis_standardized)
+
+# Overall: top 10 diagnoses over time
+diagnosis_over_time <- df %>%
+  filter(
+    !is.na(diagnosis_standardized),
+    !is.na(admission_year)
+  ) %>%
+  group_by(admission_year) %>%
+  mutate(total_diagnoses = n()) %>%
+  ungroup() %>%
+  filter(diagnosis_standardized %in% top_10_diagnoses) %>%
+  count(
+    admission_year,
+    diagnosis_standardized,
+    total_diagnoses
+  ) %>%
+  mutate(
+    proportion = n / total_diagnoses,
+    diagnosis_standardized = factor(
+      diagnosis_standardized,
+      levels = top_10_diagnoses
+    )
+  )
+
+# By sex: same top 10 diagnoses over time
+diagnosis_over_time_sex <- df %>%
+  filter(
+    !is.na(diagnosis_standardized),
+    !is.na(admission_year)
+  ) %>%
+  group_by(sex_series, admission_year) %>%
+  mutate(total_diagnoses = n()) %>%
+  ungroup() %>%
+  filter(diagnosis_standardized %in% top_10_diagnoses) %>%
+  count(
+    sex_series,
+    admission_year,
+    diagnosis_standardized,
+    total_diagnoses
+  ) %>%
+  mutate(
+    proportion = n / total_diagnoses,
+    diagnosis_standardized = factor(
+      diagnosis_standardized,
+      levels = top_10_diagnoses
+    )
+  )
+
+```
+
+```{r}
+# Plotting overall distribution of diagnoses over time
+diagnosis_over_time_plot <- ggplot(
+  diagnosis_over_time,
+  aes(
+    x = admission_year,
+    y = proportion,
+    color = diagnosis_standardized
+  )
+) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 1.5) +
+  scale_x_continuous(
+    breaks = seq(1889, 1914, by = 2)
+  ) +
+  scale_y_continuous(labels = scales::percent) +
+  scale_color_discrete(
+    labels = \(x) str_to_sentence(x)
+  ) +
+  labs(
+    title = "Most Frequent Diagnoses Over Time",
+    subtitle = "Ten most frequently recorded diagnoses overall",
+    x = "Admission year",
+    y = "Proportion within year",
+    color = "Diagnosis"
+  ) +
+  theme_minimal()
+
+diagnosis_over_time_plot
+```
+
+
+```{r}
+# same plot, but for women:
+diagnosis_over_time_women_plot <- diagnosis_over_time_sex %>%
+  filter(sex_series == "women") %>%
+  ggplot(
+    aes(
+      x = admission_year,
+      y = proportion,
+      color = diagnosis_standardized
+    )
+  ) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 1.5) +
+  scale_x_continuous(
+    breaks = seq(1889, 1914, by = 2)
+  ) +
+  scale_y_continuous(labels = scales::percent) +
+  scale_color_discrete(
+    labels = \(x) str_to_sentence(x)
+  ) +
+  labs(
+    title = "Most Frequent Diagnoses Over Time: Women",
+    subtitle = "Ten most frequently recorded diagnoses overall",
+    x = "Admission year",
+    y = "Proportion within year",
+    color = "Diagnosis"
+  ) +
+  theme_minimal()
+
+diagnosis_over_time_women_plot
+```
+
+
+```{r}
+# Same plot, but for men
+# Men
+diagnosis_over_time_men_plot <- diagnosis_over_time_sex %>%
+  filter(sex_series == "men") %>%
+  ggplot(
+    aes(
+      x = admission_year,
+      y = proportion,
+      color = diagnosis_standardized
+    )
+  ) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 1.5) +
+  scale_x_continuous(
+    breaks = seq(1889, 1914, by = 2)
+  ) +
+  scale_y_continuous(labels = scales::percent) +
+  scale_color_discrete(
+    labels = \(x) str_to_sentence(x)
+  ) +
+  labs(
+    title = "Most Frequent Diagnoses Over Time: Men",
+    subtitle = "Ten most frequently recorded diagnoses overall",
+    x = "Admission year",
+    y = "Proportion within year",
+    color = "Diagnosis"
+  ) +
+  theme_minimal()
+
+diagnosis_over_time_men_plot
+```
+
+
+### INFERENTIAL ANALYSES 
+```{r}
+# Analytical subset: top 10 diagnoses overall
+diagnosis_inferential_df <- df %>%
+  filter(
+    !is.na(sex_series),
+    diagnosis_standardized %in% top_10_diagnoses
+  )
+
+# Contingency table
+diagnosis_table <- table(
+  diagnosis_inferential_df$sex_series,
+  diagnosis_inferential_df$diagnosis_standardized
+)
+
+diagnosis_table
+
+# Chi-square test
+diagnosis_chisq <- chisq.test(diagnosis_table)
+
+diagnosis_chisq
+diagnosis_chisq$expected
+diagnosis_chisq$stdres
+```
+

@@ -7,6 +7,7 @@ output: html_document
 
 ```{r}
 #install packages (see ../requirements.txt)
+library(tidyverse)
 library(dplyr)
 library(tidyr)
 library(rvest)
@@ -14,17 +15,26 @@ library(rvest)
 ```
 
 ```{r}
+# setting paths
+
 # input data (raw)
 raw_path <- file.path("..", "data", "raw")
 
 # paths for output (tidy files)
 tidy_path <-  file.path(
   "..", "data", "tidy"
-  )
+)
 # create directory if it does not exist
 if (!dir.exists(tidy_path)) {
   dir.create(tidy_path)
 }
+
+out_dir <- file.path("..", "out")
+dir.create(
+  out_dir,
+  recursive = TRUE,
+  showWarnings = FALSE
+)
 
 # setting figure output directory
 figures_dir <- file.path("..", "out", "figures")
@@ -33,12 +43,30 @@ dir.create(
   recursive = TRUE,
   showWarnings = FALSE
 )
+
+# setting output folder:
+comparison_dir <- file.path("..", "out", "digitized_comparison")
+dir.create(
+  comparison_dir,
+  recursive = TRUE,
+  showWarnings = FALSE
+)
+
+#out path for analytical sample 
+analysis_df_dir <- file.path("..", "data","tidy")
+dir.create(
+  analysis_df_dir,
+  recursive = TRUE,
+  showWarnings = FALSE
+)
+
 ```
+
 
 ```{r, raw data inspection}
 # data: 
 raw_data <- read_csv(file.path(raw_path, "concat_1889_1913_raw.csv"))
-dim(raw_data) #should be comma-separated (3997 rows, 31 columns)
+glimpse(raw_data) #should be comma-separated (3997 rows, 31 columns)
 
 #gender-split:
 raw_men <- read_csv(file.path(raw_path, "risskov_men_1889_1913_raw.csv"))
@@ -196,6 +224,17 @@ save_comparison(sample_men, "men", comparison_dir)
 save_comparison(sample_women, "women", comparison_dir)
 
 ```
+```{r defining function for cleaning}
+check_noncompliant <- function(data, variable, expected_values) {
+  data %>%
+    filter(
+      !is.na({{ variable }}),
+      !{{ variable }} %in% expected_values
+    ) %>%
+    count({{ variable }}, sort = TRUE)
+}
+```
+
 ```{r, standardizing}
 # creating working dataframe and standardizing column names for analysis
 tidy_df <- raw_data %>%
@@ -234,40 +273,198 @@ variable_labels <- tibble(
 )
 ```
 
-
-```{r, standardizing cells}
-# tidying cells for computational analysis: 
-
-### LOWERCASING: 
-#sex and sex series: standardizing to lowercase (K --> k and M --> m)
-tidy_df <- tidy_df %>%
-  mutate(sex_series = tolower(sex_series)
-  ) %>%
-  mutate(sex=tolower(sex)
-  ) %>% #also marital status and family disposition and condition at discharge
-  mutate(marital_status=tolower(marital_status) 
-  )%>%
-  mutate(family_disposition=tolower(family_disposition)
-  )%>%
-  mutate(condition_at_discharge=tolower(condition_at_discharge))
-
-###  NAs AND SIMILAR: 
-# Kunne ikke udfyldes (cells) ==>
+```{r}
+###  TRANSCRIPTION STATUS
+# Standardize all capitalization variants of explicit transcription failures while preserving them as distinct from missing (NA) values
 tidy_df <- tidy_df %>%
   mutate(
     across(
       where(is.character),
       ~ if_else(
-        .x == "Kunne ikke udfyldes",
+        str_to_lower(.x) == "kunne ikke udfyldes",
         "could_not_transcribe",
         .x
       )
     )
   )
+```
+
+
+```{r, standardizing_cells_cat}
+### STANDARDIZING CATEGORICAL VARIABLES
+# Lowercase, remove punctuation, and standardize whitespace, while preserving explicit transcription-status values
+
+tidy_df <- tidy_df %>%
+  mutate(
+    across(
+      c(
+        sex_series,
+        sex,
+        marital_status,
+        family_disposition,
+        condition_at_discharge
+      ),
+      ~ if_else(
+        .x == "could_not_transcribe",
+        .x,
+        .x %>%
+          tolower() %>%
+          str_remove_all("[[:punct:]]") %>%
+          str_squish()
+      )
+    )
+  )
+
+### INSPECTING CATEGORICAL VALUES
+categorical_counts_pre <- tidy_df %>%
+  select(
+    sex_series,
+    sex,
+    marital_status,
+    family_disposition,
+    condition_at_discharge,
+    diagnosis_at_admission
+  ) %>%
+  pivot_longer(
+    cols = everything(),
+    names_to = "variable",
+    values_to = "value"
+  ) %>%
+  count(variable, value, sort = TRUE)
+
+#number of unique values per variable (pre-cleaning)
+unique_values_pre_cleaning <- categorical_counts_pre %>%
+  group_by(variable) %>%
+  summarise(n_unique = n())
+
+# inspecting selected value distributions
+tidy_df %>%
+  select(patient_id, marital_status)  %>%
+  count(marital_status, sort = TRUE)
+tidy_df %>%
+  count(family_disposition, sort = TRUE)
+```
+
+
+```{r defining_recodes}
+
+#setting expected values for analysis: 
+expected_sex <- c("k", "m") # 2 are expected
+expected_m_status <- c("enke", "gift", "ugift", "separeret","fraskilt") 
+expected_family_disposition <- c("ja","nej")
+
+# condition_at_discharge and diagnosis_at_admission have too many unique values for manual standardization at this stage and are kept as-is.
+
+#manual recoding dictionaries
+sex_recode <- c(
+  "kvinde" = "k",
+  "mand"   = "m",
+  "mnd"    = "m"
+)
+
+m_status_recode <- c(
+  "ug" = "ugift",
+  "g" = "gift",
+  "u" ="ugift",
+  "ugicft"="ugift",	
+  "ugioft"="ugift",
+  "g enke" = "enke",
+  "e" = "enke",
+  "gifi" = "gift",
+  "enkem" = "enke",
+  "enkemd" = "enke",
+  "eknem" = "enke",
+  "enkemand" = "enke",
+  "sep" = "separeret",
+  "separ" = "separeret",
+  "s" = "separeret",
+  "separe" = "separeret",
+  "seper" = "separeret",
+  "sepereret"	= "separeret",			
+  "frask" = "fraskilt",
+  "frs" = "fraskilt",
+  "fraskilt forladt kone" = "fraskilt",
+  "frsk" = "fraskilt",
+  "g separeret" = "separeret"
+)
+
+family_disposition_recode <- c(
+  "jq" = "ja",
+  "js" = "ja",
+  "nje" = "nej"
+)
 
 ```
 
-```{r}
+```{r applying_cat_recodes}
+# Applying manual recodes
+tidy_df <- tidy_df %>%
+  mutate(
+    sex = recode(
+      sex,
+      !!!sex_recode,
+      .default = sex
+    ),
+
+    marital_status = recode(
+      marital_status,
+      !!!m_status_recode,
+      .default = marital_status
+    ),
+    marital_status = na_if(marital_status, ""),
+    # Empty cells are missing values, not transcription failures
+
+    family_disposition = recode(
+      family_disposition,
+      !!!family_disposition_recode,
+      .default = family_disposition
+    ),
+    family_disposition = na_if(family_disposition, "")
+  ) # Empty cells are missing values, not transcription failures
+```
+
+
+```{r dbl_checking_cat_var}
+# Double checking non-compliant values
+check_noncompliant(
+  tidy_df,
+  sex,
+  expected_sex
+)
+
+check_noncompliant(
+  tidy_df,
+  marital_status,
+  expected_m_status
+)
+
+check_noncompliant(
+  tidy_df,
+  family_disposition,
+  expected_family_disposition
+)
+
+### INSPECTING CATEGORICAL VALUES — POST-CLEANING
+categorical_counts_post <- tidy_df %>%
+  select(
+    sex,
+    marital_status,
+    family_disposition
+  ) %>%
+  pivot_longer(
+    cols = everything(),
+    names_to = "variable",
+    values_to = "value"
+  ) %>%
+  count(variable, value, sort = TRUE)
+
+# Number of unique values after manual recoding
+unique_values_post_cleaning <- categorical_counts_post %>%
+  group_by(variable) %>%
+  summarise(n_unique = n_distinct(value))
+```
+
+```{r, standardizing categorical values 2}
 # total number of explicit transcription failures
 cat(sum(tidy_df == "could_not_transcribe", na.rm = TRUE))
 
@@ -299,11 +496,11 @@ could_not_transcribe_plot <- ggplot(
     y = reorder(original_label, count)
   )
 ) +
-  geom_col() +
+  geom_col(fill = "steelblue") +
   labs(
     x = "Count",
     y = "Archival field",
-    title = 'Occurrences of "could_not_transcribe" by archival field'
+    title = 'Occurences of Non-Transcribable Fields (Tidy data)'
   ) +
   theme_minimal()
 
@@ -321,16 +518,56 @@ ggsave(
   dpi = 300
 )
 ```
-```{r}
+
+```{r duplicate_patient_check}
+### CHECKING DUPLICATE PATIENT RECORDS
+# e.g. do duplicate patient_IDs represent readmissions?
+
+# Remove exact duplicates where patient ID, sex series, admission_date, and name are identical
+tidy_df <- tidy_df %>%
+  group_by(sex_series, patient_id, name) %>%
+  filter(n() == 1) %>%
+  ungroup()
+
+# Remove all records where patient ID and name are duplicated within the same sex series
+tidy_df <- tidy_df %>%
+  group_by(sex_series, patient_id, name) %>%
+  filter(n() == 1) %>%
+  ungroup()
+
+# Inspect remaining duplicate IDs occurring within the same sex series (i.e. same ID but different names)
+duplicate_patients_to_inspect <- tidy_df %>%
+  group_by(sex_series, patient_id) %>%
+  filter(n() > 1) %>%
+  arrange(sex_series, patient_id, admission_date) %>%
+  select(
+    sex_series,
+    patient_id,
+    name,
+    admission_date,
+    everything()
+  ) %>%
+  ungroup()
+
+# saving to "out" for manual inspection
+write_csv(
+  duplicate_patients_to_inspect,
+  file.path(out_dir, "duplicate_patients_to_inspect.csv")
+)
+```
+
+
+```{r birth_date_makes_no_sense}
 #checking for inconsistencies between birth year and admission year
-inconsistent_birth_date <- tidy_df %>%
+inconsistent_birth_date <- tidy_df %>% 
   filter(
     date_of_birth != "could_not_transcribe",
     admission_date != "could_not_transcribe"
   ) %>%
   mutate(
     birth_year = as.numeric(sub(".*-", "", date_of_birth)),
-    admission_year = as.numeric(sub(".*-", "", admission_date))
+    admission_year = as.numeric(sub(".*-", "", admission_date)),
+    discharge_year = as.numeric(sub(".*-", "", discharge_date)),
   ) %>%
   filter(
     birth_year > admission_year |
@@ -349,21 +586,36 @@ print(inconsistent_birth_date)
 cat(
   "Number of patients with inconsistent birth dates:",
   nrow(inconsistent_birth_date), "\n")
+```
 
-# Checking for inconsistencies across admission and discharge date columns
+
+```{r admission_logic_makes_no_sense}
+# Checking for inconsistent admission/discharge dates
 inconsistent_admission_discharge_date <- tidy_df %>%
-  filter(
-    admission_date != "could_not_transcribe",
-    discharge_date != "could_not_transcribe"
-  ) %>%
   mutate(
-    admission_year = as.numeric(sub(".*-", "", admission_date)),
-    discharge_year = as.numeric(sub(".*-", "", discharge_date))
+    admission_year = if_else(
+      !is.na(admission_date) &
+        admission_date != "could_not_transcribe",
+      as.numeric(sub(".*-", "", admission_date)),
+      NA_real_
+    ),
+    
+    discharge_year = if_else(
+      !is.na(discharge_date) &
+        discharge_date != "could_not_transcribe",
+      as.numeric(sub(".*-", "", discharge_date)),
+      NA_real_
+    )
   ) %>%
   filter(
-    admission_year < 1889 |
-    admission_year > 1914 |
-    discharge_year < admission_year
+    # Admission must fall within the study period
+    (!is.na(admission_year) &
+       (admission_year < 1889 | admission_year > 1914)) |
+      
+    # Discharge may occur after 1914, but never before admission
+    (!is.na(admission_year) &
+       !is.na(discharge_year) &
+       discharge_year < admission_year)
   ) %>%
   select(
     patient_id,
@@ -382,79 +634,7 @@ cat(
 )
 ```
 
-```{r duplicate IDs}
-# Manually inspecting and validating duplicate patient IDs
-# e.g. do duplicate IDs represent readmissions?
-
-duplicate_patients <- tidy_df %>%
-  group_by(patient_id) %>%
-  filter(n() > 1) %>%
-  arrange(patient_id, admission_date) %>%
-  select(
-    patient_id,
-    admission_date,
-    discharge_date,
-    everything()
-  ) %>%
-  ungroup()
-
-print(duplicate_patients)
-
-#if in the same sex_series 
-```
-
-```{r removing invalid patient_ids}
-tidy_df <- tidy_df %>%
-
-  # Removing patients with inconsistent admission/discharge dates
-  filter(
-    !patient_id %in% inconsistent_admission_discharge_date$patient_id)  %>%
-
-  # removing manually inspected patient
-  filter(
-    patient_id != 4673) %>%
-  
-  # overriding inconsistent birth dates
- mutate(
-    date_of_birth = if_else(
-      patient_id %in% inconsistent_birth_date$patient_id,
-      NA_character_,
-      date_of_birth
-    )
-  )
-
-# Removing duplicates from analytical sample (if necessary)
-
-# checking number of NA in date_of_birth as sanity check
-sum(is.na(tidy_df$date_of_birth)) # correctly prints 9 as expected.
-```
-
-```{r, birth date trend}
-# birth dates column
-n_birth_dates <- tidy_df %>%
-  filter(date_of_birth != "could_not_transcribe") %>%
-  summarise(n = n()) %>%
-  pull(n)
-
-cat(paste0("Number of eligible annotations for birth dates: ", n_birth_dates,"\n"))
-
-#admission dates column
-n_admission_dates <- tidy_df %>%
-  filter(admission_date != "could_not_transcribe") %>%
-  summarise(n = n()) %>%
-  pull(n)
-
-cat(paste0("Number of eligible annotations for admission dates: ", n_admission_dates,"\n"))
-
-#discharge dates column
-n_discharge_dates <- tidy_df %>%
-  filter(discharge_date != "could_not_transcribe") %>%
-  summarise(n = n()) %>%
-  pull(n)
-
-cat(paste0("Number of eligible annotations for discharge dates: ", n_discharge_dates,"\n"))
-
-# 
+```{r birth_date_trend}
 birth_date_trend <- tidy_df %>%
   mutate(
     admission_year = as.numeric(sub(".*-", "", admission_date)),
@@ -470,7 +650,6 @@ birth_date_trend <- tidy_df %>%
     proportion = n / sum(n)
   ) %>%
   ungroup()
-
   #plotting trend
 birth_date_trend_plot <- ggplot(
   birth_date_trend,
@@ -483,17 +662,58 @@ birth_date_trend_plot <- ggplot(
   geom_col() +
   scale_y_continuous(labels = scales::percent) +
   labs(
-    title = "Birth-date annotations by year of admission",
+    title = "Birth-date annotations by year of admission ",
     x = "Year of admission",
     y = "Proportion of records",
     fill = "Birth date status"
   ) +
   theme_minimal()
-
 birth_date_trend_plot
+
+# saving plot
+ggsave(
+  filename = file.path(
+    figures_dir,
+    "birth_date_trend.png"
+  ),
+  plot = birth_date_trend_plot,
+  width = 8,
+  height = 5,
+  dpi = 300
+)
 ```
 
-```{r, duplicates}
 
+```{r new_df_analysis}
+# NEW DF FOR ANALYTICAL SAMPLE: 
+analysis_df <- tidy_df %>%
+  # overriding inconsistent birth dates
+  mutate( 
+    date_of_birth = if_else( 
+      patient_id %in% inconsistent_birth_date$patient_id,
+      NA_character_,
+      date_of_birth
+    )
+  ) %>%
+# Removing patients with inconsistent admission/discharge dates and removing manually inspected patient
+  filter( 
+    !patient_id %in% inconsistent_admission_discharge_date$patient_id,
+    patient_id != 4673
+  )
+
+```
+
+```{r}
+#Creating a unique ID to make sure no patient_IDs are duplicated
+analysis_df <- analysis_df %>%
+  mutate(
+    patient_key = paste(sex_series, patient_id, sep = "_")
+  )
+
+# Saving analytical sample dataframe
+write_csv(
+  analysis_df,
+  file.path(analysis_df_dir, "analysis_df.csv")
+)
 ```
 
