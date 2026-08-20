@@ -9,19 +9,23 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+
+```{r}
+#install packages (see ../requirements.txt)
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(rvest)
+```
+
+
 ```{r}
 #setting directories: 
-
-# input data (analuysis)
-analysis_path <- file.path("..", "data", "tidy")
-
-# paths for output (tidy files)
-tidy_path <-  file.path(
-  "..", "data", "tidy"
-)
+# input data (the analytical sample)
+analysis_path <- file.path("..", "data", "analysis_data")
 # create directory if it does not exist
-if (!dir.exists(tidy_path)) {
-  dir.create(tidy_path)
+if (!dir.exists(analysis_path)) {
+  dir.create(analysis_path)
 }
 
 out_dir <- file.path("..", "out")
@@ -32,17 +36,9 @@ dir.create(
 )
 
 # setting figure output directory
-figures_dir <- file.path("..", "out", "figures")
+figures_dir <- file.path(out_dir, "figures")
 dir.create(
   figures_dir,
-  recursive = TRUE,
-  showWarnings = FALSE
-)
-
-# setting output folder:
-comparison_dir <- file.path("..", "out", "digitized_comparison")
-dir.create(
-  comparison_dir,
   recursive = TRUE,
   showWarnings = FALSE
 )
@@ -53,7 +49,7 @@ dir.create(
 df <- read_csv(file.path(analysis_path, "analysis_df.csv"))
 
 # checking dataframe structure and dimensions
-str(df) #should be comma-separated (3997 rows, 31 columns)
+str(df) #should be comma-separated (3997 rows, 36 columns)
 
 ```
 ```{r}
@@ -93,6 +89,8 @@ df <- df %>%
   )
 
 ```
+
+
 ###  DESCRIPTIVE ANALYSES
 ```{r}
 # Diagnoses columns

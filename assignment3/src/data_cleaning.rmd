@@ -11,18 +11,17 @@ library(tidyverse)
 library(dplyr)
 library(tidyr)
 library(rvest)
-
 ```
 
 ```{r}
 # setting paths
 
 # input data (raw)
-raw_path <- file.path("..", "data", "raw")
+raw_path <- file.path("..", "data", "raw_data")
 
 # paths for output (tidy files)
 tidy_path <-  file.path(
-  "..", "data", "tidy"
+  "..", "data", "tidy_data"
 )
 # create directory if it does not exist
 if (!dir.exists(tidy_path)) {
@@ -53,7 +52,7 @@ dir.create(
 )
 
 #out path for analytical sample 
-analysis_df_dir <- file.path("..", "data","tidy")
+analysis_df_dir <- file.path("..", "data","analysis_data")
 dir.create(
   analysis_df_dir,
   recursive = TRUE,
@@ -529,12 +528,6 @@ tidy_df <- tidy_df %>%
   filter(n() == 1) %>%
   ungroup()
 
-# Remove all records where patient ID and name are duplicated within the same sex series
-tidy_df <- tidy_df %>%
-  group_by(sex_series, patient_id, name) %>%
-  filter(n() == 1) %>%
-  ungroup()
-
 # Inspect remaining duplicate IDs occurring within the same sex series (i.e. same ID but different names)
 duplicate_patients_to_inspect <- tidy_df %>%
   group_by(sex_series, patient_id) %>%
@@ -556,68 +549,33 @@ write_csv(
 )
 ```
 
-
-```{r birth_date_makes_no_sense}
-#checking for inconsistencies between birth year and admission year
-inconsistent_birth_date <- tidy_df %>% 
+```{r admission_discharge_date_check}
+# Checking for inconsistent admission and discharge dates
+inconsistent_admission_discharge_date <- tidy_df %>%
   filter(
-    date_of_birth != "could_not_transcribe",
+    !is.na(admission_date),
     admission_date != "could_not_transcribe"
   ) %>%
   mutate(
-    birth_year = as.numeric(sub(".*-", "", date_of_birth)),
-    admission_year = as.numeric(sub(".*-", "", admission_date)),
-    discharge_year = as.numeric(sub(".*-", "", discharge_date)),
-  ) %>%
-  filter(
-    birth_year > admission_year |
-    !grepl("\\d{4}$", date_of_birth)
-  ) %>%
-  select(
-    patient_id,
-    date_of_birth,
-    birth_year,
-    admission_date,
-    admission_year
-  )
-
-print(inconsistent_birth_date)
-
-cat(
-  "Number of patients with inconsistent birth dates:",
-  nrow(inconsistent_birth_date), "\n")
-```
-
-
-```{r admission_logic_makes_no_sense}
-# Checking for inconsistent admission/discharge dates
-inconsistent_admission_discharge_date <- tidy_df %>%
-  mutate(
-    admission_year = if_else(
-      !is.na(admission_date) &
-        admission_date != "could_not_transcribe",
-      as.numeric(sub(".*-", "", admission_date)),
-      NA_real_
+    admission_year = as.numeric(
+      str_extract(admission_date, "\\d{4}$")
     ),
-    
-    discharge_year = if_else(
-      !is.na(discharge_date) &
-        discharge_date != "could_not_transcribe",
-      as.numeric(sub(".*-", "", discharge_date)),
-      NA_real_
+    discharge_year = as.numeric(
+      str_extract(discharge_date, "\\d{4}$")
     )
   ) %>%
   filter(
-    # Admission must fall within the study period
-    (!is.na(admission_year) &
-       (admission_year < 1889 | admission_year > 1914)) |
-      
-    # Discharge may occur after 1914, but never before admission
-    (!is.na(admission_year) &
-       !is.na(discharge_year) &
+    # Admission must fall within study period
+    is.na(admission_year) |
+      admission_year < 1889 |
+      admission_year > 1914 |
+
+    # Discharge cannot precede admission
+    (!is.na(discharge_year) &
        discharge_year < admission_year)
   ) %>%
   select(
+    sex_series,
     patient_id,
     admission_date,
     admission_year,
@@ -634,23 +592,77 @@ cat(
 )
 ```
 
-```{r birth_date_trend}
-birth_date_trend <- tidy_df %>%
+```{r birth_date_makes_no_sense}
+# Checking for inconsistencies between birth year and admission year
+inconsistent_birth_date <- tidy_df %>%
+  filter(
+    !is.na(date_of_birth),
+    !is.na(admission_date),
+    date_of_birth != "could_not_transcribe",
+    admission_date != "could_not_transcribe"
+  ) %>%
   mutate(
-    admission_year = as.numeric(sub(".*-", "", admission_date)),
-    birth_date_status = case_when(
-      is.na(date_of_birth) ~ "invalid_removed",
-      date_of_birth == "could_not_transcribe" ~ "could_not_transcribe",
-      TRUE ~ "transcribed"
+    birth_year = as.numeric(
+      str_extract(date_of_birth, "\\d{4}$")
+    ),
+    admission_year = as.numeric(
+      str_extract(admission_date, "\\d{4}$")
     )
   ) %>%
+  filter(
+    birth_year > admission_year |
+      is.na(birth_year)
+  ) %>%
+  select(
+    sex_series,
+    patient_id,
+    date_of_birth,
+    birth_year,
+    admission_date,
+    admission_year
+  )
+
+print(inconsistent_birth_date)
+cat(
+  "Number of patients with inconsistent birth dates:",
+  nrow(inconsistent_birth_date),
+  "\n"
+)
+```
+
+```{r birth_date_trend}
+
+# Keys for records whose birth dates were identified as invalid
+inconsistent_birth_keys <- inconsistent_birth_date %>%
+  transmute(
+    record_key = paste(sex_series, patient_id, sep = "_")
+  ) %>%
+  pull(record_key)
+
+birth_date_trend <- tidy_df %>%
+  mutate(
+    record_key = paste(sex_series, patient_id, sep = "_"),
+
+    admission_year = as.numeric(
+      str_extract(admission_date, "\\d{4}$")
+    ),
+    birth_date_status = case_when(
+      record_key %in% inconsistent_birth_keys ~ "invalid_removed",
+      !is.na(date_of_birth) &
+        date_of_birth != "could_not_transcribe" ~ "transcribed",
+      TRUE ~ "could_not_transcribe"
+    )
+  ) %>%
+  filter(!is.na(admission_year)) %>%
   count(admission_year, birth_date_status) %>%
   group_by(admission_year) %>%
   mutate(
     proportion = n / sum(n)
   ) %>%
   ungroup()
-  #plotting trend
+
+
+# Plotting trend
 birth_date_trend_plot <- ggplot(
   birth_date_trend,
   aes(
@@ -660,17 +672,21 @@ birth_date_trend_plot <- ggplot(
   )
 ) +
   geom_col() +
+  scale_x_continuous(
+    breaks = c(1889, 1894, 1899, 1904, 1909, 1913),
+    limits = c(1889, 1913)
+    ) +
   scale_y_continuous(labels = scales::percent) +
   labs(
-    title = "Birth-date annotations by year of admission ",
+    title = "Birth-date annotations by year of admission",
     x = "Year of admission",
     y = "Proportion of records",
     fill = "Birth date status"
   ) +
   theme_minimal()
-birth_date_trend_plot
 
-# saving plot
+birth_date_trend_plot
+# Saving plot
 ggsave(
   filename = file.path(
     figures_dir,
@@ -681,33 +697,90 @@ ggsave(
   height = 5,
   dpi = 300
 )
+
 ```
 
-
 ```{r new_df_analysis}
+inconsistent_birth_keys <- inconsistent_birth_date %>%
+  transmute(
+    record_key = paste(sex_series, patient_id, sep = "_")
+  ) %>%
+  pull(record_key)
+
+inconsistent_date_keys <- inconsistent_admission_discharge_date %>%
+  transmute(
+    record_key = paste(sex_series, patient_id, sep = "_")
+  ) %>%
+  pull(record_key)
+
+```
+
+```{r creating analysis_df}
 # NEW DF FOR ANALYTICAL SAMPLE: 
 analysis_df <- tidy_df %>%
-  # overriding inconsistent birth dates
-  mutate( 
-    date_of_birth = if_else( 
-      patient_id %in% inconsistent_birth_date$patient_id,
+  mutate(
+    record_key = paste(sex_series, patient_id, sep = "_"),
+
+    # Invalid birth-date annotation affects only that field
+    date_of_birth = if_else(
+      record_key %in% inconsistent_birth_keys,
       NA_character_,
       date_of_birth
     )
   ) %>%
-# Removing patients with inconsistent admission/discharge dates and removing manually inspected patient
-  filter( 
-    !patient_id %in% inconsistent_admission_discharge_date$patient_id,
-    patient_id != 4673
+
+  # Invalid admission/discharge dates affect record eligibility
+  filter(
+    !record_key %in% inconsistent_date_keys,
+    patient_id != "4673"
   )
 
-```
 
-```{r}
 #Creating a unique ID to make sure no patient_IDs are duplicated
 analysis_df <- analysis_df %>%
   mutate(
     patient_key = paste(sex_series, patient_id, sep = "_")
+  )
+
+```
+
+```{r load_data}
+# for analysis, checking dataframe structure and dimensions
+str(analysis_df) #should be comma-separated (3997 rows, 31 columns)
+
+#this time, transcription notes are omitted, and treated as NA:
+analysis_df <- analysis_df %>%
+  mutate(
+    across(
+      where(is.character),
+      ~ na_if(.x, "could_not_transcribe")
+    )
+  )
+
+# changing data types:
+analysis_df <- analysis_df %>%
+  mutate(
+    # Standardizing dates from d-m-y to y-m-d
+    admission_date = as.Date(admission_date, format = "%d-%m-%Y"),
+    discharge_date = as.Date(discharge_date, format = "%d-%m-%Y"),
+    date_of_birth = as.Date(date_of_birth, format = "%d-%m-%Y"),
+
+    # Extracting years
+    birth_year = lubridate::year(date_of_birth),
+    admission_year = lubridate::year(admission_date),
+    discharge_year = lubridate::year(discharge_date),
+
+    # Factorizing defined categorical variables
+    sex_series = factor(sex_series),
+    sex = factor(sex),
+    marital_status = factor(marital_status),
+
+    # Numeric / sequential variables
+    series_page = as.integer(series_page),
+    crowd_id = as.integer(crowd_id),
+    
+    #cat:
+    patient_key = as.character(patient_key)
   )
 
 # Saving analytical sample dataframe
