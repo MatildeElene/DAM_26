@@ -37,9 +37,10 @@ assignment3/
 └── README.md                      # Project documentation
 ```
 
-## Extraction Logic example (women)
+## Extraction Logic example
 *Example for the women's series:*
 
+```text
 Women 1889–1913
 207 scanned pages total
 
@@ -47,7 +48,6 @@ Page 1 ─ front matter ┐
 Page 2 ─ front matter ├─ exclude from patient extraction
 Page 3 ─ patient data ┘ ← START
 Page 4 ─ patient data
-...
 Page 207
 ```
 
