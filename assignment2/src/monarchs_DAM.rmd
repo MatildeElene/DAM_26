@@ -357,5 +357,3 @@ For example, in ()
 
 #*footnote: Source is https://um.dk/litauen/en/about-lithuania/history/. **footnote: source is https://en.natmus.dk/historical-knowledge/denmark/absolute-monarchy-1660-1848/. 
 ```
-
-And to submit this rmarkdown, knit it into html. But first, clean up the code chunks, adjust the date, rename the author and change the `eval=FALSE` flag to `eval=TRUE` so your script actually generates an output. Well done!
