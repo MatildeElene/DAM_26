@@ -69,7 +69,3 @@ Initial extraction and concatenation produced:
 | **Total** | **3,997**    | **402**        |
 
 Following data validation, cleaning, and duplicate assessment, the final analytical sample comprised **3,977 unique patient records**.
-
-### Code License
-
-Original code produced for this project is licensed under the MIT License. **This license does not apply to archival images, crowdsourced transcriptions, or other material originating from Rigsarkivet.**
