@@ -11,11 +11,13 @@ focusing on records from the separately maintained women's and men's series,
 The historical source material originates from the Danish National Archives
 (Rigsarkivet), *Psykiatrisk Hospital Risskov: Protokol over optagne patienter*.
 
-The analysis uses publicly available crowdsourced transcriptions of the digitized
-registers. The original archival material and transcriptions remain subject to
-the terms and conditions specified by Rigsarkivet.
+The project uses publicly accessible digitized archival records and crowdsourced transcriptions made available through Rigsarkivet. According to Rigsarkivet, individual images from Arkivalieronline may be downloaded for private or professional research, while larger-scale downloading requires permission from Rigsarkivet.
 
-[Add Rigsarkivet source/license information here.]
+Permission to use the data for the present project was additionally obtained directly from Rigsarkivet via email. This permission applies specifically to the present research project and does not constitute a general license for redistribution.
+
+The original archival material and crowdsourced transcriptions are not relicensed by this repository. Users should consult Rigsarkivet's current terms and obtain any necessary permissions before reusing or redistributing the source material.
+
+(Betingelser for download)[https://www.rigsarkivet.dk/arkivalieronline/]
 
 ## Repository Structure
 
