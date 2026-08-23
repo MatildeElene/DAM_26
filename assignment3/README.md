@@ -60,13 +60,9 @@ Page 207
 Initial extraction and concatenation produced:
 
 | Series | Patient records | Archival pages |
-
 |--------|----------------:|---------------:|
-
 | Women  | 1,984           | 199            |
-
 | Men    | 2,013           | 203            |
-
 | **Total** | **3,997**    | **402**        |
 
 Following data validation, cleaning, and duplicate assessment, the final analytical sample comprised **3,977 unique patient records**.
