@@ -1,11 +1,45 @@
 # Jydsk Asyl: Assignment 3, DAM26
 
-## Data License
+This repository contains the data-processing and analysis workflow for Assignment 3
+in Digital Archives and Methods (DAM26). The project examines digitized and
+crowdsourced patient registers from the psychiatric institution in Risskov,
+focusing on records from the separately maintained women's and men's series,
+1889–1913.
 
-## Transcribed Data Structure 
+## Data Source and License
 
-**Extraction Logic example (women)**
+The historical source material originates from the Danish National Archives
+(Rigsarkivet), *Psykiatrisk Hospital Risskov: Protokol over optagne patienter*.
+
+The analysis uses publicly available crowdsourced transcriptions of the digitized
+registers. The original archival material and transcriptions remain subject to
+the terms and conditions specified by Rigsarkivet.
+
+[Add Rigsarkivet source/license information here.]
+
+## Repository Structure
+
+```text
+assignment3/
+├── data/
+│   ├── raw_data/                  # Computationally extracted transcriptions
+│   └── tidy_data/                 # Cleaned and structured datasets used for analysis
+│
+├── out/
+│   ├── figures/                   # Figures generated during analysis
+│   └── digitized_comparison/      # Material used for validation against digitized records
+│
+├── src/
+│   ├── scrape_data.Rmd            # Extracts crowdsourced transcriptions
+│   └── clean_and_analyze.Rmd      # Data cleaning, validation, and statistical analysis
+│
+├── requirements.txt               # Required R packages
+└── README.md                      # Project documentation
 ```
+
+## Extraction Logic example (women)
+*Example for the women's series:*
+
 Women 1889–1913
 207 scanned pages total
 
