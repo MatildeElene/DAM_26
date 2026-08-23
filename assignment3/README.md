@@ -23,15 +23,19 @@ the terms and conditions specified by Rigsarkivet.
 assignment3/
 ├── data/
 │   ├── raw_data/                  # Computationally extracted transcriptions
-│   └── tidy_data/                 # Cleaned and structured datasets used for analysis
+│   ├── tidy_data/                 # Cleaned and structured datasets
+│   └── analysis_data/             # Final dataset used for analysis
 │
 ├── out/
 │   ├── figures/                   # Figures generated during analysis
 │   └── digitized_comparison/      # Material used for validation against digitized records
 │
 ├── src/
-│   ├── scrape_data.Rmd            # Extracts crowdsourced transcriptions
-│   └── clean_and_analyze.Rmd      # Data cleaning, validation, and statistical analysis
+│   ├── scrape_data.R              # Extracts crowdsourced transcriptions
+│   ├── data_cleaning.Rmd          # Data cleaning and validation extraction
+│   └── analysis.Rmd               # Statistical analyses
+│
+├── supplementary_materials/       # Includes transcription conventions given by Rigsarkivet
 │
 ├── requirements.txt               # Required R packages
 └── README.md                      # Project documentation
@@ -50,23 +54,4 @@ Page 3 ─ patient data ┘ ← START
 Page 4 ─ patient data
 Page 207
 ```
-
-**Descriptive overview following initial scraping and file structuring:**
-Women: 1984 patient records
-Men: 2013 patient records
-Total: 3997 patient records
-
-Women pages containing patient records: 199 
-Men pages containing patient records: 203 
-Unique patient numbers: 3977 
-
-## Analysis
-**Pre filtering: Raw datasets **
-- LOOK 
-- make sure evertyhing fits in the date format (find package from class)
-
-**After filtering: Tidy datasets**
-- filter out duplicates: only unique IDs 
-- save as CSV files in 
-
 
