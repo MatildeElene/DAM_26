@@ -7,8 +7,8 @@ This repository contains my work for **Portfolio Assignment 2** in *Digital Arch
 ```text
 assignment2/
 ├── data/
-│   ├── danish_monarchy.csv
-│   └── monarchy_data.csv
+│   ├── monarchy_data.csv
+│   └── monarchy_data_clean.csv
 ├── src/
 │   ├── create_data.Rmd
 │   └── monarchs_DAM.Rmd
