@@ -17,7 +17,7 @@ Permission to use the data for the present project was additionally obtained dir
 
 The original archival material and crowdsourced transcriptions are not relicensed by this repository. Users should consult Rigsarkivet's current terms and obtain any necessary permissions before reusing or redistributing the source material.
 
-(Betingelser for download)[https://www.rigsarkivet.dk/arkivalieronline/]
+[Betingelser for download](https://www.rigsarkivet.dk/arkivalieronline/)
 
 ## Repository Structure
 
