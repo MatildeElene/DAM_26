@@ -14,3 +14,4 @@ assignment_3
 - in readme, add a columns speficiation list
 - finish last question (trend and historical ...) and knit as thml
 - assignment 1: part 1: sources and page referrals (?)
+- knit, save as pdf, merge, hand in at WISEFLOW. 
