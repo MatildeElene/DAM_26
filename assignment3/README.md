@@ -6,18 +6,16 @@ crowdsourced patient registers from the psychiatric institution in Risskov,
 focusing on records from the separately maintained women's and men's series,
 1889–1913.
 
-## Data Source and License
+## License
 
-The historical source material originates from the Danish National Archives
-(Rigsarkivet), *Psykiatrisk Hospital Risskov: Protokol over optagne patienter*.
+The original code produced for this project is licensed under the [MIT License](LICENSE).
 
-The project uses publicly accessible digitized archival records and crowdsourced transcriptions made available through Rigsarkivet. According to Rigsarkivet, individual images from Arkivalieronline may be downloaded for private or professional research, while larger-scale downloading requires permission from Rigsarkivet.
+The MIT License applies only to original software and code produced for this project. It does not apply to archival images, crowdsourced transcriptions, or other source material originating from the Danish National Archives (Rigsarkivet).
 
-Permission to use the data for the present project was additionally obtained directly from Rigsarkivet via email. This permission applies specifically to the present research project and does not constitute a general license for redistribution.
+Permission to use the data for the present project was obtained directly from Rigsarkivet. Researchers wishing to reuse or redistribute the underlying source material should consult Rigsarkivet and obtain any necessary permissions.
 
-The original archival material and crowdsourced transcriptions are not relicensed by this repository. Users should consult Rigsarkivet's current terms and obtain any necessary permissions before reusing or redistributing the source material.
+See [Rigsarkivet: Betingelser for download](https://www.rigsarkivet.dk/arkivalieronline/).
 
-[Rigsarkivet: Betingelser for download](https://www.rigsarkivet.dk/arkivalieronline/)
 
 ## Repository Structure
 
