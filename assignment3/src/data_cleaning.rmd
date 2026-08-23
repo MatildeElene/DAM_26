@@ -346,7 +346,6 @@ tidy_df %>%
 
 
 ```{r defining_recodes}
-
 #setting expected values for analysis: 
 expected_sex <- c("k", "m") # 2 are expected
 expected_m_status <- c("enke", "gift", "ugift", "separeret","fraskilt") 
@@ -518,44 +517,52 @@ ggsave(
 )
 ```
 
+```{r}
+# saving tidy df to tidy_data directory
+write_csv(
+  tidy_df,
+  file.path(tidy_path, "tidy_df.csv")
+)
+```
+
+```{r creating analysis_df}
+# NEW DF FOR ANALYTICAL SAMPLE: 
+analysis_df <- tidy_df
+
+analysis_df %>%
+  count(sex_series)
+```
+
 ```{r duplicate_patient_check}
 ### CHECKING DUPLICATE PATIENT RECORDS
 # e.g. do duplicate patient_IDs represent readmissions?
 
 # Remove exact duplicates where patient ID, sex series, admission_date, and name are identical
-tidy_df <- tidy_df %>%
-  group_by(sex_series, patient_id, name) %>%
-  filter(n() == 1) %>%
-  ungroup()
-
-# Inspect remaining duplicate IDs occurring within the same sex series (i.e. same ID but different names)
-duplicate_patients_to_inspect <- tidy_df %>%
-  group_by(sex_series, patient_id) %>%
-  filter(n() > 1) %>%
-  arrange(sex_series, patient_id, admission_date) %>%
-  select(
+analysis_df <- analysis_df %>%
+  distinct(
     sex_series,
     patient_id,
     name,
     admission_date,
-    everything()
+    .keep_all = TRUE
   ) %>%
+  mutate(
+    record_key = row_number()
+  )
+
+# Inspect remaining duplicate IDs occurring within the same sex series (i.e. same ID but different names)
+duplicate_patients_to_inspect <- analysis_df %>%
+  group_by(sex_series, patient_id) %>%
+  filter(n() > 1) %>%
+  arrange(sex_series, patient_id, admission_date) %>%
   ungroup()
 
-# saving to "out" for manual inspection
-write_csv(
-  duplicate_patients_to_inspect,
-  file.path(out_dir, "duplicate_patients_to_inspect.csv")
-)
+duplicate_patients_to_inspect
 ```
 
 ```{r admission_discharge_date_check}
 # Checking for inconsistent admission and discharge dates
-inconsistent_admission_discharge_date <- tidy_df %>%
-  filter(
-    !is.na(admission_date),
-    admission_date != "could_not_transcribe"
-  ) %>%
+inconsistent_admission_discharge_date <- analysis_df %>%
   mutate(
     admission_year = as.numeric(
       str_extract(admission_date, "\\d{4}$")
@@ -565,16 +572,14 @@ inconsistent_admission_discharge_date <- tidy_df %>%
     )
   ) %>%
   filter(
-    # Admission must fall within study period
     is.na(admission_year) |
       admission_year < 1889 |
       admission_year > 1914 |
-
-    # Discharge cannot precede admission
-    (!is.na(discharge_year) &
-       discharge_year < admission_year)
+      (!is.na(discharge_year) &
+         discharge_year < admission_year)
   ) %>%
   select(
+    record_key,
     sex_series,
     patient_id,
     admission_date,
@@ -594,7 +599,7 @@ cat(
 
 ```{r birth_date_makes_no_sense}
 # Checking for inconsistencies between birth year and admission year
-inconsistent_birth_date <- tidy_df %>%
+inconsistent_birth_date <- analysis_df %>%
   filter(
     !is.na(date_of_birth),
     !is.na(admission_date),
@@ -614,6 +619,7 @@ inconsistent_birth_date <- tidy_df %>%
       is.na(birth_year)
   ) %>%
   select(
+    record_key,
     sex_series,
     patient_id,
     date_of_birth,
@@ -629,29 +635,27 @@ cat(
   "\n"
 )
 ```
-
-```{r birth_date_trend}
-
-# Keys for records whose birth dates were identified as invalid
+```{r keys}
 inconsistent_birth_keys <- inconsistent_birth_date %>%
-  transmute(
-    record_key = paste(sex_series, patient_id, sep = "_")
-  ) %>%
   pull(record_key)
 
-birth_date_trend <- tidy_df %>%
-  mutate(
-    record_key = paste(sex_series, patient_id, sep = "_"),
+inconsistent_date_keys <- inconsistent_admission_discharge_date %>%
+  pull(record_key)
+```
 
+
+```{r birth_date_trend}
+birth_date_trend <- analysis_df %>%
+  mutate(
     admission_year = as.numeric(
       str_extract(admission_date, "\\d{4}$")
     ),
     birth_date_status = case_when(
-      record_key %in% inconsistent_birth_keys ~ "invalid_removed",
-      !is.na(date_of_birth) &
-        date_of_birth != "could_not_transcribe" ~ "transcribed",
-      TRUE ~ "could_not_transcribe"
-    )
+  record_key %in% inconsistent_birth_keys ~ "invalid_removed",
+  is.na(date_of_birth) ~ "missing",
+  date_of_birth == "could_not_transcribe" ~ "could_not_transcribe",
+  TRUE ~ "transcribed"
+)
   ) %>%
   filter(!is.na(admission_year)) %>%
   count(admission_year, birth_date_status) %>%
@@ -700,27 +704,9 @@ ggsave(
 
 ```
 
-```{r new_df_analysis}
-inconsistent_birth_keys <- inconsistent_birth_date %>%
-  transmute(
-    record_key = paste(sex_series, patient_id, sep = "_")
-  ) %>%
-  pull(record_key)
-
-inconsistent_date_keys <- inconsistent_admission_discharge_date %>%
-  transmute(
-    record_key = paste(sex_series, patient_id, sep = "_")
-  ) %>%
-  pull(record_key)
-
-```
-
-```{r creating analysis_df}
-# NEW DF FOR ANALYTICAL SAMPLE: 
-analysis_df <- tidy_df %>%
+```{r prepping data for analysis}
+analysis_df <- analysis_df %>%
   mutate(
-    record_key = paste(sex_series, patient_id, sep = "_"),
-
     # Invalid birth-date annotation affects only that field
     date_of_birth = if_else(
       record_key %in% inconsistent_birth_keys,
@@ -728,15 +714,16 @@ analysis_df <- tidy_df %>%
       date_of_birth
     )
   ) %>%
-
-  # Invalid admission/discharge dates affect record eligibility
   filter(
+    # Invalid admission/discharge dates affect record eligibility
     !record_key %in% inconsistent_date_keys,
-    patient_id != "4673"
+
+    # Manually excluded record
+    !(sex_series == "men" & patient_id == "4673")
   )
 
 
-#Creating a unique ID to make sure no patient_IDs are duplicated
+# Creating a record identifier combining archival series and patient ID
 analysis_df <- analysis_df %>%
   mutate(
     patient_key = paste(sex_series, patient_id, sep = "_")
@@ -746,9 +733,9 @@ analysis_df <- analysis_df %>%
 
 ```{r load_data}
 # for analysis, checking dataframe structure and dimensions
-str(analysis_df) #should be comma-separated (3997 rows, 31 columns)
+str(analysis_df) 
 
-#this time, transcription notes are omitted, and treated as NA:
+# treating transcription-status values as missing for analysis
 analysis_df <- analysis_df %>%
   mutate(
     across(

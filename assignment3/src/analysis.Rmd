@@ -65,10 +65,10 @@ df <- df %>%
 # changing data types:
 df <- df %>%
   mutate(
-    # Standardizing dates from d-m-y to y-m-d
-    admission_date = as.Date(admission_date, format = "%d-%m-%Y"),
-    discharge_date = as.Date(discharge_date, format = "%d-%m-%Y"),
-    date_of_birth = as.Date(date_of_birth, format = "%d-%m-%Y"),
+    # Standardizing dates
+    admission_date = as.Date(admission_date),
+    discharge_date = as.Date(discharge_date),
+    date_of_birth = as.Date(date_of_birth),
 
     # Extracting years
     birth_year = lubridate::year(date_of_birth),
@@ -98,28 +98,19 @@ df <- df %>%
 diagnosis_counts <- df %>%
   count(diagnosis_at_admission, sort = TRUE)
 diagnosis_counts
+
+# condition columns 
+# how were conditions structured? 
+condition_count <- df %>%
+  count(condition_at_discharge, sort = TRUE)
+condition_count
+
+cat("Unique discharge conditions:",nrow(condition_count))
+# bedret, helbredet, uhelbredet/uforandret, død, på prøve)
+
 ```
+
 ```{r}
-# Standardizing diagnosis strings for analysis
-df <- df %>%
-  mutate(
-    diagnosis_standardized = diagnosis_at_admission %>%
-      str_to_lower() %>%
-      str_remove_all("[[:punct:]]") %>%
-      str_squish()%>%
-      na_if(""),
-
-    diagnosis_standardized = case_when(
-      str_detect(diagnosis_standardized, "obs") ~ "obs",
-      TRUE ~ diagnosis_standardized
-    ),
-
-    diagnosis_standardized = recode(
-      diagnosis_standardized,
-      !!!diagnosis_recode,
-      .default = diagnosis_standardized
-    )
-  )
 # Recoding obvious textual variants
 diagnosis_recode <- c(
   "melank" = "melankoli",
@@ -142,6 +133,26 @@ diagnosis_recode <- c(
   "dem pre" = "dementia præcox"
   )
 
+# Standardizing diagnosis strings for analysis
+df <- df %>%
+  mutate(
+    diagnosis_standardized = diagnosis_at_admission %>%
+      str_to_lower() %>%
+      str_remove_all("[[:punct:]]") %>%
+      str_squish()%>%
+      na_if(""),
+
+    diagnosis_standardized = case_when(
+      str_detect(diagnosis_standardized, "obs") ~ "obs",
+      TRUE ~ diagnosis_standardized
+    ),
+
+    diagnosis_standardized = recode(
+      diagnosis_standardized,
+      !!!diagnosis_recode,
+      .default = diagnosis_standardized
+    )
+  )
 df <- df %>%
   mutate(
     diagnosis_standardized = recode(
@@ -160,7 +171,7 @@ cat("Number of clean diagnosis:", nrow(clean_diagnosis_counts)) #495
 
 ```
 
-```{r}
+```{r diagnoses_by_sex}
 # Comparing diagnoses across the two archival series
 diagnosis_by_series <- df %>%
   count(
@@ -177,7 +188,7 @@ diagnosis_by_series <- df %>%
 diagnosis_by_series
 ```
 
-```{r}
+```{r top_ten_diagnoses}
 # Top 10 most frequent standardized diagnoses overall
 top_10_diagnoses <- df %>%
   filter(!is.na(diagnosis_standardized)) %>%
@@ -232,9 +243,32 @@ diagnosis_over_time_sex <- df %>%
     )
   )
 
+# Frequency distribution among non-missing diagnoses
+diagnosis_counts <- df %>%
+  filter(!is.na(diagnosis_standardized)) %>%
+  count(diagnosis_standardized, sort = TRUE)
+
+# Number of non-missing diagnoses
+n_nonmissing_diagnoses <- sum(diagnosis_counts$n)
+
+# Number accounted for by the 10 most frequent diagnoses
+n_top10 <- diagnosis_counts %>%
+  slice_head(n = 10) %>%
+  summarise(n = sum(n)) %>%
+  pull(n)
+
+# Percentage
+top10_percentage <- n_top10 / n_nonmissing_diagnoses * 100
+
+cat(
+  "Non-missing diagnoses:", n_nonmissing_diagnoses, "\n",
+  "Top 10 observations:", n_top10, "\n",
+  "Top 10 percentage:", round(top10_percentage, 1), "%\n"
+)
+sum(df$sex_series == "men", na.rm = TRUE)
 ```
 
-```{r}
+```{r diagnoses_all}
 # Plotting overall distribution of diagnoses over time
 diagnosis_over_time_plot <- ggplot(
   diagnosis_over_time,
@@ -263,10 +297,22 @@ diagnosis_over_time_plot <- ggplot(
   theme_minimal()
 
 diagnosis_over_time_plot
+
+# Saving plot
+ggsave(
+  filename = file.path(
+    figures_dir,
+    "top_10_diagnoses_all.png"
+  ),
+  plot = diagnosis_over_time_plot,
+  width = 8,
+  height = 5,
+  dpi = 300
+)
+
 ```
 
-
-```{r}
+```{r diagnoses_women}
 # same plot, but for women:
 diagnosis_over_time_women_plot <- diagnosis_over_time_sex %>%
   filter(sex_series == "women") %>%
@@ -296,10 +342,22 @@ diagnosis_over_time_women_plot <- diagnosis_over_time_sex %>%
   theme_minimal()
 
 diagnosis_over_time_women_plot
+sort(unique(df$admission_year))
+
+# Saving plot
+ggsave(
+  filename = file.path(
+    figures_dir,
+    "top_10_diagnoses_women.png"
+  ),
+  plot = diagnosis_over_time_women_plot,
+  width = 8,
+  height = 5,
+  dpi = 300
+)
 ```
 
-
-```{r}
+```{r, diagnosis_men}
 # Same plot, but for men
 # Men
 diagnosis_over_time_men_plot <- diagnosis_over_time_sex %>%
@@ -330,31 +388,350 @@ diagnosis_over_time_men_plot <- diagnosis_over_time_sex %>%
   theme_minimal()
 
 diagnosis_over_time_men_plot
+
+# Saving plot
+ggsave(
+  filename = file.path(
+    figures_dir,
+    "top_10_diagnoses_men.png"
+  ),
+  plot = diagnosis_over_time_men_plot,
+  width = 8,
+  height = 5,
+  dpi = 300
+)
+```
+# -----------------------------------
+
+```{r condition_variable_standardization}
+# from inspection of unique condition string: 
+condition_recode <- c(
+  "helbredet"    = "helbredt",
+  "helbr"        = "helbredt",
+  "uhelbredet"   = "uhelbredt",
+  "uforandr"     = "uhelbredt",
+  "uforand"      = "uhelbredt",
+  "uforandret"   = "uhelbredt",
+  "sindsyg"      = "uhelbredt",
+  "genindlagt"   = "genindlagt",
+  "uhelbr"       = "uhelbredt",
+  "uhelbredelig" = "uhelbredt",
+  "uh"           = "uhelbredt",
+  "uhel"         = "uhelbredt",
+  "uhelbre"      = "uhelbredt",
+  "bedr"         = "bedret",
+  "bedring"      = "bedret",
+  "bedrt"        = "bedret",
+  "bedring"      = "bedret",
+  "bredret"      = "bedret",
+  "paa prøve"    = "på prøve",
+  "afdød"        = "død"
+)
+
+df <- df %>%
+  mutate(
+    condition_standardized = case_when(
+      str_detect(condition_at_discharge, "\\buhelbredet\\b") ~ "uhelbredt",
+      str_detect(condition_at_discharge, "\\bhelbredet\\b") ~ "helbredt",
+      str_detect(condition_at_discharge, "\\bbedret\\b") ~ "bedret",
+      str_detect(condition_at_discharge, "\\bdød\\b") ~ "død",
+      str_detect(condition_at_discharge, "\\bpaa prøve\\b") ~ "på prøve",
+      TRUE ~ condition_at_discharge
+    ),
+
+    condition_standardized = recode(
+      condition_standardized,
+      !!!condition_recode,
+      .default = condition_standardized
+      #(everything else should be treated as NA)
+    )
+  )
+
+clean_condition_counts <- df %>%
+  count(condition_standardized, sort = TRUE)
+
+cat(
+  "Number of cleaned conditions:",
+  nrow(clean_condition_counts))
+
+clean_condition_counts
+
+```
+
+```{r setting categories}
+# Retaining only defined discharge-condition categories
+valid_conditions <- c(
+  "helbredt",
+  "bedret",
+  "uhelbredt",
+  "død",
+  "på prøve",
+  "genindlagt"
+)
+
+df <- df %>%
+  mutate(
+    condition_standardized = if_else(
+      condition_standardized %in% valid_conditions,
+      condition_standardized,
+      NA_character_
+    )
+  )
+
+#checking
+clean_condition_counts <- df %>%
+  count(condition_standardized, sort = TRUE)
+clean_condition_counts
+```
+```{r condition_vs_na}
+# Comparing retained conditions with NA
+condition_validity <- df %>%
+  mutate(
+    condition_status = if_else(
+      is.na(condition_standardized),
+      "NA",
+      "Retained"
+    )
+  ) %>%
+  count(condition_status) %>%
+  mutate(
+    proportion = n / sum(n),
+    percent = proportion * 100
+  )
+
+condition_validity
+```
+
+
+```{r conditions_by_sex}
+# Comparing discharge conditions across the two archival series
+condition_by_series <- df %>%
+  filter(!is.na(condition_standardized)) %>%
+  count(
+    sex_series,
+    condition_standardized
+  ) %>%
+  group_by(sex_series) %>%
+  mutate(
+    proportion = n / sum(n)
+  ) %>%
+  arrange(sex_series, desc(n)) %>%
+  ungroup()
+
+condition_by_series
+
+# Frequency distribution among non-missing discharge conditions
+condition_counts <- df %>%
+  filter(!is.na(condition_standardized)) %>%
+  count(condition_standardized, sort = TRUE)
+condition_counts
+```
+
+
+```{r conditions_over_time}
+condition_over_time <- df %>%
+  filter(
+    !is.na(condition_standardized),
+    !is.na(admission_year)
+  ) %>%
+  group_by(admission_year) %>%
+  mutate(total_conditions = n()) %>%
+  ungroup() %>%
+  count(
+    admission_year,
+    condition_standardized,
+    total_conditions
+  ) %>%
+  mutate(
+    proportion = n / total_conditions
+  )
+
+# Number of non-missing discharge conditions
+n_distinct_conditions <- df %>%
+  summarise(
+    n = n_distinct(condition_standardized, na.rm = TRUE)
+  ) %>%
+  pull(n)
+
+# Number of non-missing discharge conditions
+n_nonmissing_conditions <- df %>%
+  summarise(
+    n = sum(!is.na(condition_standardized))
+  ) %>%
+  pull(n)
+
+cat(
+  "Distinct conditions:", n_distinct_conditions, "\n",
+  "Non-missing conditions:", n_nonmissing_conditions, "\n"
+)
+```
+
+
+```{r conditions_all_plot}
+condition_over_time_plot <- ggplot(
+  condition_over_time,
+  aes(
+    x = admission_year,
+    y = proportion,
+    color = condition_standardized
+  )
+) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 1.5) +
+  scale_x_continuous(
+    breaks = seq(1889, 1913, by = 2)
+  ) +
+  scale_y_continuous(labels = scales::percent) +
+  scale_color_discrete(
+    labels = \(x) str_to_sentence(x)
+  ) +
+  labs(
+    title = "Condition at Discharge Over Time", subtitle = "Distribution of retained discharge conditions by admission year", x = "Admission year", y = "Proportion of recorded conditions", color = "Condition at discharge"
+  ) +
+  theme_minimal()
+
+condition_over_time_plot
+
+# Saving plot
+ggsave(
+  filename = file.path(
+    figures_dir,
+    "patient_outcomes_over_time.png"
+  ),
+  plot = condition_over_time_plot,
+  width = 8,
+  height = 5,
+  dpi = 300
+)
+```
+
+```{r conditions_sex}
+# Comparing discharge conditions across sex series
+condition_by_series <- df %>%
+  filter(
+    !is.na(condition_standardized),
+    !is.na(sex_series)
+  ) %>%
+  count(
+    sex_series,
+    condition_standardized
+  ) %>%
+  group_by(sex_series) %>%
+  mutate(
+    proportion = n / sum(n)
+  ) %>%
+  ungroup()
+
+condition_by_series
+
+# plotting sex-differences
+condition_sex_plot <- ggplot(
+  condition_by_series,
+  aes(
+    x = sex_series,
+    y = proportion,
+    fill = condition_standardized
+  )
+) +
+  geom_col() +
+
+  # Percentage labels
+  geom_text(
+    aes(
+      label = scales::percent(proportion, accuracy = 0.1)
+    ),
+    position = position_stack(vjust = 0.5),
+    size = 2.2
+  ) +
+
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_discrete(
+    labels = \(x) str_to_sentence(x)
+  ) +
+  labs(
+    title = "Recorded Discharge Conditions by Sex",
+    subtitle = "Distribution of retained discharge conditions, 1889–1913",
+    x = NULL,
+    y = "Proportion of recorded conditions",
+    fill = "Condition at discharge"
+  ) +
+  theme_minimal()
+
+condition_sex_plot
+
+# Saving plot
+ggsave(
+  filename = file.path(
+    figures_dir,
+    "patient_outcomes_by_sex.png"
+  ),
+  plot = condition_sex_plot,
+  width = 8,
+  height = 5,
+  dpi = 300
+)
 ```
 
 
 ### INFERENTIAL ANALYSES 
-```{r}
-# Analytical subset: top 10 diagnoses overall
-diagnosis_inferential_df <- df %>%
+```{r chi_square_condition_sex}
+
+# Contingency table: sex × condition at discharge
+condition_sex_table <- df %>%
   filter(
     !is.na(sex_series),
-    diagnosis_standardized %in% top_10_diagnoses
+    !is.na(condition_standardized)
+  ) %>%
+  count(
+    sex_series,
+    condition_standardized
+  ) %>%
+  pivot_wider(
+    names_from = condition_standardized,
+    values_from = n,
+    values_fill = 0
   )
 
-# Contingency table
-diagnosis_table <- table(
-  diagnosis_inferential_df$sex_series,
-  diagnosis_inferential_df$diagnosis_standardized
+condition_sex_table
+```
+```{r}
+condition_sex_matrix <- df %>%
+  filter(
+    !is.na(sex_series),
+    !is.na(condition_standardized)
+  ) %>%
+  with(
+    table(sex_series, condition_standardized)
+  )
+
+condition_sex_matrix
+```
+```{r}
+condition_sex_chisq <- chisq.test(condition_sex_matrix)
+condition_sex_chisq
+
+condition_sex_chisq$expected
+```
+```{r}
+sum(condition_sex_chisq$expected < 5)
+
+mean(condition_sex_chisq$expected < 5)
+```
+```{r}
+condition_sex_chisq$stdres
+```
+
+```{r}
+n <- sum(condition_sex_matrix)
+
+cramers_v <- sqrt(
+  as.numeric(condition_sex_chisq$statistic) /
+    (n * min(
+      nrow(condition_sex_matrix) - 1,
+      ncol(condition_sex_matrix) - 1
+    ))
 )
 
-diagnosis_table
-
-# Chi-square test
-diagnosis_chisq <- chisq.test(diagnosis_table)
-
-diagnosis_chisq
-diagnosis_chisq$expected
-diagnosis_chisq$stdres
+cramers_v
 ```
 
