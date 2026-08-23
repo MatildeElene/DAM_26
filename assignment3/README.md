@@ -52,6 +52,7 @@ Page 1 ─ front matter ┐
 Page 2 ─ front matter ├─ exclude from patient extraction
 Page 3 ─ patient data ┘ ← START
 Page 4 ─ patient data
+...
 Page 207
 ```
 
