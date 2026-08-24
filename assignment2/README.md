@@ -17,6 +17,9 @@ assignment2/
 │   └── long_term_plot.jpg
 └── README.md
 ```
+## License
+© 2026 Matilde Elene Hansen.
+Unless otherwise stated, original material in this repository is licensed under the Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0) license. See `LICENSE` for details.
 
 ## Element 1 — Creating the Dataset
 
