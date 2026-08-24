@@ -1,15 +1,11 @@
-## Repo structure
+# DAM26: Course Repository
 
+Repository for coursework completed as part of **Digital Archives and Methods (DAM26)**.
+
+## Repository Structure
+
+```text
+DAM_26/
+├── assignment_2/    # Assignment 2: Monarchs assignment.
+└── assignment_3/    # Final project: Computational analysis of Risskov patient registers.
 ```
-DIRECTORIES: 
-
-assignment_2
-assignment_3
-```
-
-### To do
-- check word count of assignment 3
-- go through reflections assignment once more
-- in readme, add a columns speficiation list
-- assignment 1: part 1: sources and page referrals (?)
-- knit, save as pdf, merge, hand in at WISEFLOW. 
