@@ -6,16 +6,23 @@ This repository contains my work for **Portfolio Assignment 2** in *Digital Arch
 
 ```text
 assignment2/
-├── data/
-│   ├── monarchy_data.csv
-│   └── monarchy_data_clean.csv
-├── src/
-│   ├── create_data.Rmd
-│   └── monarchs_DAM.Rmd
-├── out/
-│   ├── over_average_reign.jpg
-│   └── long_term_plot.jpg
-└── README.md
+├── data/                              
+│   ├── monarchy_data.csv              # manually constructed monarchy dataset
+│   └── monarchy_data_clean.csv        # cleaned dataset used for analysis
+│
+├── src/                               
+│   ├── create_data.rmd                # Element 1: data creation and cleaning
+│   ├── monarchs_DAM.rmd               # Element 2: analysis and visualization
+│   ├── references.bib                 # bibliography for historical sources
+│   ├── chicago-fullnote-bibliography.csl  # Chicago citation style
+│   └── DAM26.Rproj                    # RStudio project file
+│
+├── out/                               # generated figures
+│   ├── over_average_reign.jpg         # monarchs with above-average reigns
+│   └── long_term_plot.jpg             # long-term trend in reign duration
+│
+├── LICENSE                            # CC BY-SA 4.0 license
+└── README.md                          # project documentation
 ```
 ## Element 1 — Creating the Dataset
 
