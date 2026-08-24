@@ -17,11 +17,6 @@ assignment2/
 │   └── long_term_plot.jpg
 └── README.md
 ```
-## License
-© 2026 Matilde Elene Hansen.
-
-Unless otherwise stated, original material in this repository is licensed under the Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0) license. See `LICENSE` for details.
-
 ## Element 1 — Creating the Dataset
 
 ### Data Description
@@ -66,7 +61,12 @@ The same principle is applied to missing birth and death years: observations rem
 - [Britannica: List of Danish Monarchs](https://www.britannica.com/topic/list-of-Danish-monarchs-2061262), accessed 03/08/2026.
 - [Wikipedia: List of Monarchs of Denmark](https://en.wikipedia.org/wiki/List_of_monarchs_of_Denmark), accessed 03/08/2026. Used particularly for birth years and royal houses.
 
+Additional historical sources used to contextualize the analysis in Element 2 are documented in `references.bib` and cited using Chicago Notes and Bibliography style.
+
 **Note:** Some historical birth dates are unknown or reported as ranges. Where a range is given, the earliest year is used in this dataset.
+
+### Citation Style
+References used in the analysis are stored in `references.bib`. The `chicago-fullnote-bibliography.csl` file is used to render citations according to Chicago Notes and Bibliography style.
 
 ## Element 2 — Analysis and Visualization
 
@@ -147,3 +147,8 @@ Run the R Markdown files in the following order:
 ```
 
 `create_data.Rmd` constructs and exports the dataset required for the analysis. `monarchs_DAM.Rmd` then imports the cleaned dataset, performs the analyses, and saves the resulting visualizations to `out/`.
+
+## License
+© 2026 Matilde Elene Hansen.
+
+Unless otherwise stated, original material in this repository is licensed under the Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0) license. See `LICENSE` for details.
